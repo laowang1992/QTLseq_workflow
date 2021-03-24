@@ -58,3 +58,7 @@ Rscript QTLseqr.R \
 	--popType ${popType} \
 	--winSize ${winSize2} \
 	--width ${width} --height ${height}
+
+## primer
+cd ${work_dir}/04.Primer
+#sh primer.sh
