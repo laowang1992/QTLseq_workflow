@@ -3,9 +3,11 @@ library(xlsx)
 
 argv <- commandArgs(trailingOnly = T)
 
+argv[1] <- "public.indels.filter.txt"
+argv[2] <- "public.primer.txt"
 gt <- read_tsv(file = argv[1])
-primer <- read_tsv(file = "xxx.primer.txt")
+primer <- read_tsv(file = argv[2])
 
 df <- gt %>% right_join(primer, by = "ID")
-write.csv(x = df, file = str_replace(argv[1], "primer.txt", "primer.csv"))
-write.xlsx(x = df, file = str_replace(argv[1], "primer.txt", "primer.xlsx"))
+write_csv(x = df, file = str_replace(argv[2], "primer.txt", "primer.csv"))
+write.xlsx(x = df, file = str_replace(argv[2], "primer.txt", "primer.xlsx"))
