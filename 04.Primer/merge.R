@@ -10,4 +10,4 @@ primer <- read_tsv(file = argv[2])
 
 df <- gt %>% right_join(primer, by = "ID")
 write_csv(x = df, file = str_replace(argv[2], "primer.txt", "primer.csv"))
-write.xlsx(x = df, file = str_replace(argv[2], "primer.txt", "primer.xlsx"))
+#write.xlsx(x = df, file = str_replace(argv[2], "primer.txt", "primer.xlsx"))

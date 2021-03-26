@@ -10,7 +10,7 @@ my @len;
 
 while(<IN>){
 	chomp;
-	next if /#/;
+	next if /^SEQ_500bp/;
 	my @a=split/\s+/,$_;
 	my @b=split(/\,/,$a[5]);
 	my @len;
