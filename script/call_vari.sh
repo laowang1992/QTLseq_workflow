@@ -56,8 +56,8 @@ awk '{print $1}' ${sample} | \
 #genomeCoverageBed -ibam test.sort.bam -bga -g ../refseq/TAIR10_genome.fa > test.cov.bedgraph
 awk '{print $1}' ${sample} | \
         parallel -j ${thread} -I% --max-args 1 \
-        genomeCoverageBed -ibam %.dd.bam -bga -g ${genome} | \
-        grep -w "0$" %.0cov.bedgraph
+        genomeCoverageBed -ibam %.dd.bam -bga -g ${genome} "|" \
+        grep -w "0$" ">" %.0cov.bedgraph
 
 cd ${work_dir}/02.SNP_indel
 
@@ -117,9 +117,9 @@ java -jar ${DISCVRSeq} VariantQC -O ${filename}.flt.report.html -R ${genome} -V 
 
 # 
 cd ${work_dir}/00.data/00.raw_data
-fastqc -o ./QC --nogroup --threads ${thread} *[fastq\|fq].gz &
+fastqc -o ./QC --nogroup --threads ${thread} *[fastq\|fq].gz
 cd ${work_dir}/00.data/01.clean_data
-fastqc -o ./QC --nogroup --threads ${thread} *clean.fastq.gz &
+fastqc -o ./QC --nogroup --threads ${thread} *clean.fastq.gz
 Rscript stat.R
 
 cd ${work_dir}/01.Mapping

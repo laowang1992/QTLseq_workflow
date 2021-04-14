@@ -36,11 +36,6 @@ p <- add_argument(p, "--height", help = "Delta SNP index plot height", type = "n
 # Parse the command line arguments
 argv <- parse_args(p)
 
-library(tidyverse)
-library(cowplot)
-library(ggsci)
-library(windowscanr)
-
 filename <- argv$input
 outPrefix <- argv$out
 minQ <- argv$minQ
@@ -61,7 +56,6 @@ winStep <- argv$winStep
 minN <- argv$minN
 width <- argv$width
 height <- argv$height
-
 
 if (FALSE) {
   ## file name
@@ -99,6 +93,12 @@ if (FALSE) {
   width <-18
   height <- 5
 }
+
+library(tidyverse)
+library(cowplot)
+#library(ggsci)
+library(windowscanr)
+library(RColorBrewer)
 
 df <- read_tsv(file = filename)
 df %>% select(CHROM, POS, REF, ALT, QUAL, all_of(c(highP, lowP, highB, lowB)))
@@ -150,7 +150,14 @@ hh<-na.omit(hh)	#删除含有NA的行
 
 
 ######过滤混池样本中总覆盖深度小于等于4的位点
-pdf(paste(outPrefix, "depth_desity.pdf", sep = "."))
+pdf(paste(outPrefix, "depth_desity.pdf", sep = "."), height = 6, width = 6)
+par(mfrow = c(2, 2))
+plot(density(hh[, paste(highP, "sum", sep = ".")][[1]], width = 2), main = highP)
+plot(density(hh[, paste(lowP, "sum", sep = ".")][[1]], width = 2), main = lowP)
+plot(density(hh[, paste(highB, "sum", sep = ".")][[1]], width = 2), main = highB)
+plot(density(hh[, paste(lowB, "sum", sep = ".")][[1]], width = 2), main = lowB)
+dev.off()
+png(paste(outPrefix, "depth_desity.png", sep = "."), units = "in", height = 6, width = 6, res = 300)
 par(mfrow = c(2, 2))
 plot(density(hh[, paste(highP, "sum", sep = ".")][[1]], width = 2), main = highP)
 plot(density(hh[, paste(lowP, "sum", sep = ".")][[1]], width = 2), main = lowP)
@@ -170,18 +177,20 @@ write_tsv(x = SNPnumber, path = paste(outPrefix, "SNP_number_per_chr.txt", sep =
 write_csv(x = SNPnumber, path = paste(outPrefix, "SNP_number_per_chr.csv", sep = "."))
 ##
 options(scipen = 200)
-
+colourCount = dim(chromColor)[[1]]
+getPalette = colorRampPalette(brewer.pal(8, "Set1"))
 Phist <- chromColor %>% left_join(hh, by = "CHROM") %>% ggplot(aes(x = POS)) +
   geom_histogram(aes(fill = LABEL), color = NA, binwidth = 1000000) +
   labs(x = NULL, y = "SNP Count / 1Mb") +
   scale_x_continuous(expand = c(0, 0)) +
-  scale_fill_discrete(name = "CHROM") +
+  scale_fill_manual(values = getPalette(colourCount)) +
   theme_half_open() +
   theme(strip.text = element_text(color = NA, size = 0.1),
         strip.background = element_rect(color = NA, fill = NA)) +
   facet_grid(LABEL ~ .)
-ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.pdf", sep = "."), width = 7, height = dim(chromColor)[[1]] * 0.5)
-ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.png", sep = "."), width = 7, height = dim(chromColor)[[1]] * 0.5, dpi = 500)
+Phist
+ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.pdf", sep = "."), width = 9, height = dim(chromColor)[[1]] * 0.6 + 0.5)
+ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.png", sep = "."), width = 9, height = dim(chromColor)[[1]] * 0.6 + 0.5, dpi = 500)
 
 
 #########################
