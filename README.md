@@ -1,7 +1,7 @@
 # QTLseq_workflow
 from NGS data to QTL-seq result
 # 一 QTL-seq原理
-QTL-seq<sup>[1]</sup>是一种将Bulked‐segregant analysis (BSA)<sup>[2,3]</sup>和高通量测序相结合，快速定位QTL的方法。目标性状有差异的双亲构建的分离群体中分别选取极端表型个体进行等量混合构建两个极端表型bulked DNA pool并进行测序。随后进行变异分析筛选出双亲间SNP位点并分别计算两个bulked DNA pool中每个SNP位点上某一亲本基因型read覆盖深度占该位点总read深度的比值，即SNP index，通过两个bulked DNA pool的SNP index相减即得到ΔSNP index。在基因组所有区域中，目标基因及其连锁的区域由于根据表型受到相反的选择在两个bulked DNA pool中表现出不同的趋势，因此ΔSNP index会显著偏离0附近；另一方面，于目标形状无关的区域则两个bulked DNA pool则表现为相似的变化趋势，因此ΔSNP index会在0附近波动（图1）。
+QTL-seq<sup>[[1](#ref1)]</sup>是一种将Bulked‐segregant analysis (BSA)<sup>[2,3]</sup>和高通量测序相结合，快速定位QTL的方法。目标性状有差异的双亲构建的分离群体中分别选取极端表型个体进行等量混合构建两个极端表型bulked DNA pool并进行测序。随后进行变异分析筛选出双亲间SNP位点并分别计算两个bulked DNA pool中每个SNP位点上某一亲本基因型read覆盖深度占该位点总read深度的比值，即SNP index，通过两个bulked DNA pool的SNP index相减即得到ΔSNP index。在基因组所有区域中，目标基因及其连锁的区域由于根据表型受到相反的选择在两个bulked DNA pool中表现出不同的趋势，因此ΔSNP index会显著偏离0附近；另一方面，于目标形状无关的区域则两个bulked DNA pool则表现为相似的变化趋势，因此ΔSNP index会在0附近波动（图1）。
 <br/>
 ![图1 QTL-seq原理示意图](https://user-images.githubusercontent.com/35584208/121320629-e9595300-c93f-11eb-8745-e1f153dd59c6.png)
 # 二 QTL-seq流程图
@@ -24,14 +24,26 @@ QTL-seq<sup>[1]</sup>是一种将Bulked‐segregant analysis (BSA)<sup>[2,3]</su
  
  ---
  # 参考文献
+<div id="ref1"></div>
  - [1]	Hiroki Takagi, Akira Abe, Kentaro Yoshida, Shunichi Kosugi, Satoshi Natsume, Chikako Mitsuoka, Aiko Uemura, Hiroe Utsushi, Muluneh Tamiru, Shohei Takuno, Hideki Innan, Liliana M. Cano, Sophien Kamoun, Ryohei Terauchi. QTL ‐seq: rapid mapping of quantitative trait loci in rice by whole genome resequencing of DNA from two bulked populations[J]. The Plant Journal, 2013, 74(1).
+<div id="ref2"></div>
 - [2]	Giovannoni James J., Wing Rod A., Ganal Martin W., Tanksley Steven D..  Isolation of molecular markers from specific chromosomal intervals using DNA pools from existing mapping populations[J]. Narnia, 1991, 19(23).
+<div id="ref3"></div>
 - [3]	R. W. Michelmore, I. Paran,R. V. Kesseli. Identification of Markers Linked to Disease-Resistance Genes by Bulked Segregant Analysis: A Rapid Method to Detect Markers in Specific Genomic Regions by Using Segregating Populations[J]. Proceedings of the National Academy of Sciences of the United States of America, 1991, 88(21).
+<div id="ref4"></div>
 - [4]	Shifu Chen, Yanqing Zhou, Yaru Chen, Jia Gu. fastp: an ultra-fast all-in-one FASTQ preprocessor[J]. Bioinformatics, 2018, 34(17).
+<div id="ref5"></div>
 - [5]	Ben Langmead, Steven L Salzberg. Fast gapped-read alignment with Bowtie 2[J]. Nature Methods: Techniques for life scientists and chemists, 2012, 9(4).
+<div id="ref6"></div>
 - [6]	Jia-Ming Song, Zhilin Guan, Jianlin Hu, Chaocheng Guo, Zhiquan Yang, Shuo Wang, Dongxu Liu, Bo Wang, Shaoping Lu, Run Zhou, Wen-Zhao Xie, Yuanfang Cheng, Yuting Zhang, Kede Liu, Qing-Yong Yang, Ling-Ling Chen, Liang Guo. Eight high-quality genomes reveal pan-genome architecture and ecotype differentiation of Brassica napus[J]. Nature Plants, 2020, 6(1).
+<div id="ref7"></div>
 - [7]	Li Heng, Handsaker Bob, Wysoker Alec, Fennell Tim, Ruan Jue, Homer Nils, Marth Gabor, Abecasis Goncalo, Durbin Richard. The Sequence Alignment/Map format and SAMtools.[J]. Bioinformatics (Oxford, England), 2009, 25(16).
+<div id="ref8"></div>
 - [8]	“Picard Toolkit.” 2019. Broad Institute, GitHub Repository. http://broadinstitute.github.io/picard/; Broad Institute
+<div id="ref9"></div>
 - [9]	Aaron McKenna, Matthew Hanna, Eric Banks, Andrey Sivachenko, Kristian Cibulskis, Andrew Kernytsky, Kiran Garimella, David Altshuler, Stacey Gabriel, Mark Daly, Mark A. DePristo. The Genome Analysis Toolkit: A MapReduce framework for analyzing next-generation DNA sequencing data[J]. Cold Spring Harbor Laboratory Press, 2010, 20(9).
+<div id="ref10"></div>
 - [10]	Ben N. Mansfeld, Rebecca Grumet. QTLseqr: An R Package for Bulk Segregant Analysis with Next‐Generation Sequencing[J]. The Plant Genome, 2018, 11(2).
+<div id="ref3"></div>
+<div id="ref11"></div>
 - [11]	Untergasser Andreas, Cutcutache Ioana, Koressaar Triinu, Ye Jian, Faircloth Brant C., Remm Maido, Rozen Steven G.. Primer3—new capabilities and interfaces[J]. Narnia, 2012, 40(15).
