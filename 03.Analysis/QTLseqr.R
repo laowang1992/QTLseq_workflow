@@ -31,6 +31,8 @@ p <- add_argument(p, "--maxLBdp", help = "Maxmum depth for low bulk", type = "nu
 #
 p <- add_argument(p, "--winSize", help = "Window size for sliding window statistics", type = "numeric", default = 2000000)
 #
+p <- add_argument(p, "--minN", help = "Minimum SNP number in a window for plot", type = "numeric", default = 10)
+#
 p <- add_argument(p, "--width", help = "Delta SNP index plot width", type = "numeric", default = 15)
 p <- add_argument(p, "--height", help = "Delta SNP index plot height", type = "numeric", default = 5)
 
@@ -62,6 +64,7 @@ maxHBdp <- argv$maxHBdp
 minLBdp <- argv$minLBdp
 maxLBdp <- argv$maxLBdp
 winSize <- argv$winSize
+minN <- argv$minN
 width <- argv$width
 height <- argv$height
 
@@ -98,7 +101,8 @@ if (FALSE) {
   
   ## sliding window parameter
   winSize <- 2000000
-  
+  #
+  minN <- 10
   ##
   width <- 15
   height <- 5
@@ -188,13 +192,14 @@ df <- runQTLseqAnalysis(
 #plotQTLStats(SNPset = df, var = "Gprime", plotThreshold = TRUE, q = 0.01)
 #plotQTLStats(SNPset = df, var = "deltaSNP", plotIntervals = TRUE) + theme_half_open()
 # add chrom color infomation
-p <- ggplot(df) +
+p <- df %>% filter(nSNPs > minN) %>%
+  ggplot() +
   geom_line(aes(x = POS, y = CI_95), color = "gray") +
   geom_line(aes(x = POS, y = -CI_95), color = "gray") +
-  geom_line(aes(x = POS, y = tricubeDeltaSNP, color = COLOR)) +
+  geom_line(aes(x = POS, y = tricubeDeltaSNP, color = COLOR), size = 1) +
   ylim(-1, 1) +
   labs(x = NULL, y = "delta SNP index") +
-  scale_x_continuous(breaks = NULL) +
+  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
   scale_color_aaas() +
   theme_half_open() +
   theme(legend.position = "none") +
@@ -202,13 +207,14 @@ p <- ggplot(df) +
 ggsave(filename = paste(outPrefix, "deltaSNPindex.95CI.pdf", sep = "."), width = width, height = height)
 ggsave(filename = paste(outPrefix, "deltaSNPindex.95CI.png", sep = "."), width = width, height = height, dpi = 500)
 
-p <- ggplot(df) +
+p <- df %>% filter(nSNPs > minN) %>%
+  ggplot() +
   geom_line(aes(x = POS, y = CI_99), color = "gray") +
   geom_line(aes(x = POS, y = -CI_99), color = "gray") +
-  geom_line(aes(x = POS, y = tricubeDeltaSNP, color = COLOR)) +
+  geom_line(aes(x = POS, y = tricubeDeltaSNP, color = COLOR), size = 1) +
   ylim(-1, 1) +
   labs(x = NULL, y = "delta SNP index") +
-  scale_x_continuous(breaks = NULL) +
+  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
   scale_color_aaas() +
   theme_half_open() +
   theme(legend.position = "none") +

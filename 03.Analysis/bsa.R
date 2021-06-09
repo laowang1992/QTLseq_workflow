@@ -96,7 +96,7 @@ if (FALSE) {
 
 library(tidyverse)
 library(cowplot)
-#library(ggsci)
+library(ggsci)
 library(windowscanr)
 library(RColorBrewer)
 
@@ -188,7 +188,7 @@ Phist <- chromColor %>% left_join(hh, by = "CHROM") %>% ggplot(aes(x = POS)) +
   theme(strip.text = element_text(color = NA, size = 0.1),
         strip.background = element_rect(color = NA, fill = NA)) +
   facet_grid(LABEL ~ .)
-Phist
+
 ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.pdf", sep = "."), width = 9, height = dim(chromColor)[[1]] * 0.6 + 0.5)
 ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.png", sep = "."), width = 9, height = dim(chromColor)[[1]] * 0.6 + 0.5, dpi = 500)
 
@@ -264,7 +264,7 @@ Pdelta <- ggplot(filter(d, SNP_N > minN), aes(x = win_mid, y = delta_SNP_INDEX))
   geom_point(aes(color = COLOR), size = 0.7) +
   ylim(-1, 1) +
   labs(x="", y="delta SNP index") +
-  scale_x_continuous(breaks = NULL) +
+  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
   scale_color_aaas() +
   theme_minimal_grid() +
   theme(legend.position = "none") +
@@ -278,7 +278,7 @@ Phigh <- ggplot(filter(d, SNP_N > minN), aes(x = win_mid, y = d[d$SNP_N > minN, 
   geom_point(aes(color = COLOR), size = 0.7) +
   ylim(0, 1) +
   labs(x="", y="delta SNP index") +
-  scale_x_continuous(breaks = NULL) +
+  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
   scale_color_aaas() +
   theme_minimal_grid() +
   theme(legend.position = "none") +
@@ -291,7 +291,7 @@ Plow <- ggplot(filter(d, SNP_N > minN), aes(x = win_mid, y = d[d$SNP_N > minN, p
   geom_point(aes(color = COLOR), size = 0.7) +
   ylim(0, 1) +
   labs(x="", y="delta SNP index") +
-  scale_x_continuous(breaks = NULL) +
+  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
   scale_color_aaas() +
   theme_minimal_grid() +
   theme(legend.position = "none") +

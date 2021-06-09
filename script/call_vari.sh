@@ -69,8 +69,8 @@ awk '{print $1}' ${sample} | \
         -I ../01.Mapping/%.dd.bam -o %.gatk.g.vcf \
         "&>" %.HaplotypeCaller.log
 
-#ls *g.vcf > GVCFs.list
-cut -f1 ../00.data/samples.txt | sed 's/$/.g.vcf/' > GVCFs.list
+ls *g.vcf > GVCFs.list
+#cut -f1 ../00.data/samples.txt | sed 's/$/.gatk.g.vcf/' > GVCFs.list
 
 java -Xmx50g -jar ${gatk} \
      -R ${genome} -T CombineGVCFs \
@@ -120,7 +120,7 @@ cd ${work_dir}/00.data/00.raw_data
 fastqc -o ./QC --nogroup --threads ${thread} *[fastq\|fq].gz
 cd ${work_dir}/00.data/01.clean_data
 fastqc -o ./QC --nogroup --threads ${thread} *clean.fastq.gz
-Rscript stat.R
+Rscript dataStat.R
 
 cd ${work_dir}/01.Mapping
 Rscript covStat.R ${genome}.fai

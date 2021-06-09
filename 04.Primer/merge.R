@@ -3,8 +3,8 @@ library(xlsx)
 
 argv <- commandArgs(trailingOnly = T)
 
-argv[1] <- "public.indels.filter.txt"
-argv[2] <- "public.primer.txt"
+#argv[1] <- "public.indels.filter.txt"
+#argv[2] <- "public.primer.txt"
 gt <- read_tsv(file = argv[1])
 primer <- read_tsv(file = argv[2])
 

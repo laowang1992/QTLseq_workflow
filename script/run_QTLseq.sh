@@ -27,7 +27,7 @@
 # 	2021/02/20	First release  
 
 ## 加载配置文件
-. .conf
+. ./.conf
 
 ## call variation
 sh call_vari.sh
@@ -57,6 +57,7 @@ Rscript QTLseqr.R \
 	--minLBdp ${minHBdp} --maxLBdp ${maxLBdp} \
 	--popType ${popType} \
 	--winSize ${winSize2} \
+	--minN ${minN} \
 	--width ${width} --height ${height}
 
 ## primer
