@@ -1,0 +1,59 @@
+###########################################################
+## 定义环境变量
+PATH=/public/home/wangpf/tools/fastp:$PATH
+PATH=/public/home/wangpf/tools/parallel-20200622/bin:$PATH
+PATH=/public/home/wangpf/tools/FastQC:$PATH
+PATH=/public/home/wangpf/tools/bedtools2/bin:$PATH
+PATH=/public/home/wangpf/tools/bowtie2-2.3.4.3:$PATH
+PATH=/public/home/wangpf/tools/samtools-1.9/bin:$PATH
+PATH=/public/home/wangpf/tools/bcftools-1.9/bin:$PATH
+PATH=/public/home/wangpf/tools/R-4.0.2/bin:$PATH
+PATH=/public/home/wangpf/tools/primer3/src/:$PATH
+PATH=/bin/:$PATH
+export PATH
+###########################################################
+
+## call variation参数
+export work_dir=/dat1/Project/wpf/workspace/20210101_XXX
+export index=${work_dir}/refseq/zs11
+export genome=${work_dir}/refseq/zs11.genome.fa
+export picard=/public/home/wangpf/tools/picard-tools-2.23.3/picard.jar
+export gatk=/public/home/wangpf/tools/GenomeAnalysisTK-3.8-0-ge9d806836/GenomeAnalysisTK.jar
+export DISCVRSeq=/public/home/wangpf/tools/DISCVRSeq/DISCVRSeq-1.18.jar
+export snpEff=/public/home/wangpf/tools/snpEff/snpEff.jar
+export sample=${work_dir}/00.data/samples.txt
+export filename=BSA
+export thread=28
+
+## BSA参数
+#
+export out=$filename			# outfile prefix
+
+export highP=
+export lowP=
+export highB=
+export lowB=
+
+export minQ=100
+
+export minHPdp=10
+export maxHPdp=10000			# 这里写10000相当于不对最高覆盖度过滤
+export minLPdp=10
+export maxLPdp=10000
+export minHBdp=10
+export maxHBdp=10000			# 这里写10000相当于不对最高覆盖度过滤
+export minLBdp=10
+export maxLBdp=10000
+
+export minN=10					# 如果每个window的SNP数小于minN，则绘图时略过
+
+export width=15
+export height=5
+# dotplot
+export winSize1=500000
+export winStep1=250000
+# QTLseqr plot
+export bulkSuieH=
+export bulkSuieL=
+export popType=RIL				# RIL or F2
+export winSize2=2000000
