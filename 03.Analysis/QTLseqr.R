@@ -16,8 +16,8 @@ p <- add_argument(p, "--popType", help = "Population type, 'F2' or 'RIL'", type 
 #
 p <- add_argument(p, "--minQ", help = "Minimum QUAL for variation", type = "numeric", default = 100)
 #
-p <- add_argument(p, "--bulkSuieH", help = "Bulk size with high phenotype", type = "numeric")
-p <- add_argument(p, "--bulkSuieL", help = "Bulk size with low phenotype", type = "numeric")
+p <- add_argument(p, "--bulkSizeH", help = "Bulk size with high phenotype", type = "numeric")
+p <- add_argument(p, "--bulkSizeL", help = "Bulk size with low phenotype", type = "numeric")
 
 #
 p <- add_argument(p, "--minHPdp", help = "Minimum depth for high parent", type = "numeric", default = 10)
@@ -38,7 +38,7 @@ p <- add_argument(p, "--height", help = "Delta SNP index plot height", type = "n
 
 # Parse the command line arguments
 argv <- parse_args(p)
-
+write.table(argv, paste(argv$out, "QTLseqrparameter.txt", sep = "."), quote = F, sep = "\t", row.names = F)
 
 library(tidyverse)
 library(QTLseqr)
@@ -48,8 +48,8 @@ library(ggsci)
 filename <- argv$input
 outPrefix <- argv$out
 minQ <- argv$minQ
-bulkSuieH <- argv$bulkSuieH
-bulkSuieL <- argv$bulkSuieL
+bulkSuieH <- argv$bulkSizeH
+bulkSuieL <- argv$bulkSizeL
 highP <- argv$highP
 lowP <- argv$lowP
 highB <- argv$highB
@@ -75,8 +75,8 @@ if (FALSE) {
   ## filter SNP Quality
   minQ <- 300
   ##
-  bulkSuieH <- 30
-  bulkSuieL <- 30
+  bulkSizeH <- 30
+  bulkSizeL <- 30
   ## sample name
   highP <- "s8417"
   lowP <- "FM195BML"
@@ -165,7 +165,7 @@ dd3  <- dd2 %>% mutate(highBulk.AD = if_else(highParent.GT == paste(ALT, ALT, se
          highBulk.AD, highBulk.DP, highBulk.GQ, highBulk.PL,
          lowBulk.AD, lowBulk.DP, lowBulk.GQ, lowBulk.PL)
 
-write_tsv(x = dd3, path = paste(outPrefix, "reform.txt", sep = "."))
+write_tsv(dd3, paste(outPrefix, "reform.txt", sep = "."))
 
 df <- importFromGATK(file = paste(outPrefix, "reform.txt", sep = "."),
                      highBulk = "highBulk",
@@ -189,9 +189,17 @@ df <- runQTLseqAnalysis(
   intervals = c(95, 99) # confidence interval
 )
 
+# 输出QTLseqr结算结果
+outtb <- df %>% select(CHROM, POS, REF, ALT, AD_REF.LOW, AD_ALT.LOW, 
+              SNPindex.LOW, AD_REF.HIGH, AD_ALT.HIGH, SNPindex.HIGH, 
+              deltaSNP, nSNPs, tricubeDeltaSNP, CI_95, CI_99)
+write_tsv(outtb, paste(outPrefix, "QTLseqrdeltaSNPindex.txt", sep = "."))
+write_csv(outtb, paste(outPrefix, "QTLseqrdeltaSNPindex.csv", sep = "."))
+
 #plotQTLStats(SNPset = df, var = "Gprime", plotThreshold = TRUE, q = 0.01)
 #plotQTLStats(SNPset = df, var = "deltaSNP", plotIntervals = TRUE) + theme_half_open()
 # add chrom color infomation
+
 p <- df %>% filter(nSNPs > minN) %>%
   ggplot() +
   geom_line(aes(x = POS, y = CI_95), color = "gray") +

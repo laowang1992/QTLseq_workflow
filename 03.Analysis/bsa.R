@@ -277,7 +277,7 @@ ggsave(Pdelta, filename = paste(outPrefix, "delta_SNP_index.png", sep = "."), wi
 Phigh <- ggplot(filter(d, SNP_N > minN), aes(x = win_mid, y = d[d$SNP_N > minN, paste(highB, "SNP_INDEX", sep = ".")][[1]])) +
   geom_point(aes(color = COLOR), size = 0.7) +
   ylim(0, 1) +
-  labs(x="", y="delta SNP index") +
+  labs(x="", y="SNP index") +
   scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
   scale_color_aaas() +
   theme_minimal_grid() +
@@ -290,7 +290,7 @@ ggsave(Phigh, filename = paste(outPrefix, highB, "SNP_index.png", sep = "."), wi
 Plow <- ggplot(filter(d, SNP_N > minN), aes(x = win_mid, y = d[d$SNP_N > minN, paste(lowB, "SNP_INDEX", sep = ".")][[1]])) +
   geom_point(aes(color = COLOR), size = 0.7) +
   ylim(0, 1) +
-  labs(x="", y="delta SNP index") +
+  labs(x="", y="SNP index") +
   scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
   scale_color_aaas() +
   theme_minimal_grid() +
