@@ -34,32 +34,35 @@ sh call_vari.sh
 
 ##
 cd ${work_dir}/03.Analysis
-Rscript bsa.R \
-	--input ${filename}.filter.SNPs.txt --out ${out} \
-	--highP ${highP} --lowP ${lowP} --highB ${highB} --lowB ${lowB} \
-	--minQ ${minQ} \
-	--minHPdp ${minHPdp} --maxHPdp ${maxHPdp} \
-	--minLPdp ${minHPdp} --maxLPdp ${maxLPdp} \
-	--minHBdp ${minHBdp} --maxHBdp ${maxHBdp} \
-	--minLBdp ${minHBdp} --maxLBdp ${maxLBdp} \
-	--winSize ${winSize1} --winStep ${winStep1} \
-	--minN ${minN} \
-	--width ${width} --height ${height}
 
-Rscript QTLseqr.R \
-	--input ${filename}.filter.SNPs.table --out ${out} \
-	--highP ${highP} --lowP ${lowP} --highB ${highB} --lowB ${lowB} \
-	--bulkSuieH ${bulkSuieH} --bulkSuieL ${bulkSuieL} \
-	--minQ ${minQ} \
-	--minHPdp ${minHPdp} --maxHPdp ${maxHPdp} \
-	--minLPdp ${minHPdp} --maxLPdp ${maxLPdp} \
-	--minHBdp ${minHBdp} --maxHBdp ${maxHBdp} \
-	--minLBdp ${minHBdp} --maxLBdp ${maxLBdp} \
-	--popType ${popType} \
-	--winSize ${winSize2} \
-	--minN ${minN} \
-	--width ${width} --height ${height}
+qtlseq=0
+if [ $qtlseq = 1 ]; then
+	Rscript bsa.R \
+		--input ${filename}.filter.SNPs.txt --out ${out} \
+		--highP ${highP} --lowP ${lowP} --highB ${highB} --lowB ${lowB} \
+		--minQ ${minQ} \
+		--minHPdp ${minHPdp} --maxHPdp ${maxHPdp} \
+		--minLPdp ${minHPdp} --maxLPdp ${maxLPdp} \
+		--minHBdp ${minHBdp} --maxHBdp ${maxHBdp} \
+		--minLBdp ${minHBdp} --maxLBdp ${maxLBdp} \
+		--winSize ${winSize1} --winStep ${winStep1} \
+		--minN ${minN} \
+		--width ${width} --height ${height}
 
+	Rscript QTLseqr.R \
+		--input ${filename}.filter.SNPs.table --out ${out} \
+		--highP ${highP} --lowP ${lowP} --highB ${highB} --lowB ${lowB} \
+		--bulkSuieH ${bulkSuieH} --bulkSuieL ${bulkSuieL} \
+		--minQ ${minQ} \
+		--minHPdp ${minHPdp} --maxHPdp ${maxHPdp} \
+		--minLPdp ${minHPdp} --maxLPdp ${maxLPdp} \
+		--minHBdp ${minHBdp} --maxHBdp ${maxHBdp} \
+		--minLBdp ${minHBdp} --maxLBdp ${maxLBdp} \
+		--popType ${popType} \
+		--winSize ${winSize2} \
+		--minN ${minN} \
+		--width ${width} --height ${height}
+fi
 ## primer
 cd ${work_dir}/04.Primer
 #sh primer.sh
