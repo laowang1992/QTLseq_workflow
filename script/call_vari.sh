@@ -125,5 +125,5 @@ Rscript dataStat.R
 cd ${work_dir}/01.Mapping
 Rscript covStat.R ${genome}.fai
 echo -e "Sample,Total read,Mapping read,Mapping rate,Unique mapping read,Unique mapping rate" > align_stat.csv
-for i in $(cut -f2 ${sample}); do perl alignStat.pl $i; done >> align_stat.csv
+for i in $(cut -f1 ${sample}); do perl alignStat.pl $i; done >> align_stat.csv
 
