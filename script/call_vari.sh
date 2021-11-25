@@ -113,7 +113,17 @@ grep -v "##" ${filename}.filter.SNPs.vcf | sed 's/^#CHROM/CHROM/' > ../03.Analys
 
 java -jar ${DISCVRSeq} VariantQC -O ${filename}.flt.report.html -R ${genome} -V ${filename}.flt.vcf
 
+# annotation
+cd ${work_dir}/03.Annotation
+convert2annovar.pl --format vcf4old ../02.SNP_indel/${filename}.filter.SNPs.vcf --outfile ./${filename}.filter.SNPs.annovar.input
+convert2annovar.pl --format vcf4old ../02.SNP_indel/${filename}.filter.INDELs.vcf --outfile ./${filename}.filter.INDELs.annovar.input
+annotate_variation.pl --geneanno --neargene 2000 -buildver genome --dbtype refGene --outfile ./${filename}.filter.SNPs.anno --exonsort ./${filename}.filter.SNPs.annovar.input ../refseq
+annotate_variation.pl --geneanno --neargene 2000 -buildver genome --dbtype refGene --outfile ./${filename}.filter.INDELs.anno --exonsort ./${filename}.filter.INDELs.annovar.input ../refseq
 
+Rscript AnnoStat.R --snpvar ${filename}.filter.SNPs.anno.variant_function \
+	--indelvar ${filename}.filter.INDELs.anno.variant_function \
+	--snpex ${filename}.filter.SNPs.anno.exonic_variant_function \
+	--indelex ${filename}.filter.INDELs.anno.exonic_variant_function
 
 # 
 cd ${work_dir}/00.data/00.raw_data
