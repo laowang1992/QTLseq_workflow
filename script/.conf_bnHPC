@@ -57,7 +57,7 @@ export height=5
 export winSize1=500000
 export winStep1=250000
 # QTLseqr plot
-export bulkSuieH=
-export bulkSuieL=
+export bulkSizeH=
+export bulkSizeL=
 export popType=RIL				# RIL or F2
 export winSize2=2000000

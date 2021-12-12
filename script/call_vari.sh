@@ -111,9 +111,9 @@ java -Xmx50g -jar ${gatk} \
 java -Xmx50g -jar ${gatk} \
      -R ${genome} -T VariantsToTable \
      -F CHROM -F POS -F REF -F ALT -GF GT -GF AD -GF DP -GF GQ -GF PL \
-     -V ${filename}.filter.SNPs.vcf -o ../03.Analysis/${filename}.filter.SNPs.table
+     -V ${filename}.filter.SNPs.vcf -o ../04.Analysis/${filename}.filter.SNPs.table
 
-grep -v "##" ${filename}.filter.SNPs.vcf | sed 's/^#CHROM/CHROM/' > ../03.Analysis/${filename}.filter.SNPs.txt
+grep -v "##" ${filename}.filter.SNPs.vcf | sed 's/^#CHROM/CHROM/' > ../04.Analysis/${filename}.filter.SNPs.txt
 
 java -jar ${DISCVRSeq} VariantQC -O ${filename}.flt.report.html -R ${genome} -V ${filename}.flt.vcf
 

@@ -48,8 +48,8 @@ library(ggsci)
 filename <- argv$input
 outPrefix <- argv$out
 minQ <- argv$minQ
-bulkSuieH <- argv$bulkSizeH
-bulkSuieL <- argv$bulkSizeL
+bulkSizeH <- argv$bulkSizeH
+bulkSizeL <- argv$bulkSizeL
 highP <- argv$highP
 lowP <- argv$lowP
 highB <- argv$highB
@@ -184,7 +184,7 @@ df <- runQTLseqAnalysis(
   SNPset = df,
   windowSize = winSize, #window size
   popStruc = popType,  #F2 or RIL
-  bulkSize = c(bulkSuieH, bulkSuieL),  #bulk size, first is highbulk
+  bulkSize = c(bulkSizeH, bulkSizeL),  #bulk size, first is highbulk
   replications = 1000, 
   intervals = c(95, 99) # confidence interval
 )

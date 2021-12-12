@@ -52,7 +52,7 @@ if [ $qtlseq = 1 ]; then
 	Rscript QTLseqr.R \
 		--input ${filename}.filter.SNPs.table --out ${out} \
 		--highP ${highP} --lowP ${lowP} --highB ${highB} --lowB ${lowB} \
-		--bulkSuieH ${bulkSuieH} --bulkSuieL ${bulkSuieL} \
+		--bulkSizeH ${bulkSizeH} --bulkSizeL ${bulkSizeL} \
 		--minQ ${minQ} \
 		--minHPdp ${minHPdp} --maxHPdp ${maxHPdp} \
 		--minLPdp ${minHPdp} --maxLPdp ${maxLPdp} \
