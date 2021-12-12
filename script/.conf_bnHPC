@@ -1,5 +1,7 @@
 ###########################################################
 ## 定义环境变量
+PATH=/public/home/wangpf/tools/cufflinks-2.2.1.Linux_x86_64:$PATH
+PATH=/public/home/wangpf/tools/annovar:$PATH
 PATH=/public/home/wangpf/tools/fastp:$PATH
 PATH=/public/home/wangpf/tools/parallel-20200622/bin:$PATH
 PATH=/public/home/wangpf/tools/FastQC:$PATH
@@ -17,6 +19,8 @@ export PATH
 export work_dir=/dat1/Project/wpf/workspace/20210101_XXX
 export index=${work_dir}/refseq/zs11
 export genome=${work_dir}/refseq/zs11.genome.fa
+export gff=${work_dir}/db/gff_file_name.gff					# gff文件名
+export gtf=${work_dir}/db/gtf_file_name.gtf					# gtf文件名
 export picard=/public/home/wangpf/tools/picard-tools-2.23.3/picard.jar
 export gatk=/public/home/wangpf/tools/GenomeAnalysisTK-3.8-0-ge9d806836/GenomeAnalysisTK.jar
 export DISCVRSeq=/public/home/wangpf/tools/DISCVRSeq/DISCVRSeq-1.18.jar

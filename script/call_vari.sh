@@ -1,8 +1,12 @@
 ####################################################
 # 数据准备
-
-# 建基因组索引
+## 建基因组索引
 cd ${work_dir}/refseq
+# annovar建库
+gffread ${gff} -T -o ${gtf}
+gtfToGenePred  -genePredExt ${gtf} genome_refGene.txt
+retrieve_seq_from_fasta.pl --format refGene --seqfile ${genome} genome_refGene.txt --out genome_refGeneMrna.fa
+#
 samtools faidx ${genome}
 java -jar ${picard} CreateSequenceDictionary R=${genome} O=${genome/fa/dict}
 bowtie2-build ${genome} ${index}
