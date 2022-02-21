@@ -28,7 +28,7 @@ cd ${work_dir}/00.data/01.clean_data
 fastp -i ${i[2]} -o ./${i[0]}_1.clean.fastq.gz \
       -I ${i[3]} -O ./${i[0]}_2.clean.fastq.gz \
       --json=./${i[0]}.json --html=${i[0]}.html --report_title="${i[0]} fastp report" \
-      --thread=8 --length_required 100
+      --thread=8 --length_required 50
 
 # 比对
 cd ${work_dir}/01.Mapping

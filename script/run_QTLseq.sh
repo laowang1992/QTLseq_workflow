@@ -33,7 +33,7 @@
 sh call_vari.sh
 
 ##
-cd ${work_dir}/03.Analysis
+cd ${work_dir}/04.Analysis
 
 qtlseq=0
 if [ $qtlseq = 1 ]; then
@@ -64,5 +64,5 @@ if [ $qtlseq = 1 ]; then
 		--width ${width} --height ${height}
 fi
 ## primer
-cd ${work_dir}/04.Primer
+cd ${work_dir}/05.Primer
 #sh primer.sh

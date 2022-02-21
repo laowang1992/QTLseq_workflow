@@ -15,6 +15,8 @@ my $alg_conc_1;
 my $unp_alg_1;
 my $unmapped;
 
+my $datestring = localtime();
+print STDERR "$datestring: reading $ARGV[0].log ......\n";
 while(<LOG>){
 	chomp;
 	if(/^(\d+) reads; of these:$/){

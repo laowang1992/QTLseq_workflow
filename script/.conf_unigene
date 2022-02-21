@@ -19,8 +19,8 @@ export PATH
 export work_dir=/dat1/Project/wpf/workspace/20210101_XXX
 export index=${work_dir}/refseq/zs11
 export genome=${work_dir}/refseq/zs11.genome.fa
-export gff=${work_dir}/db/gff_file_name.gff					# gff文件名
-export gtf=${work_dir}/db/gtf_file_name.gtf					# gtf文件名
+export gff=${work_dir}/refseq/gff_file_name.gff					# gff文件名
+export gtf=${work_dir}/refseq/gtf_file_name.gtf					# gtf文件名
 export picard=/dat1/Project/wpf/tools/picard-tools-2.23.2/picard.jar
 export gatk=/dat1/Project/wpf/tools/GenomeAnalysisTK-3.8-0-ge9d806836/GenomeAnalysisTK.jar
 export DISCVRSeq=/dat1/Project/wpf/tools/DISCVRSeq/DISCVRSeq-1.17.jar

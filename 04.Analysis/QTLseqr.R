@@ -190,8 +190,8 @@ df <- runQTLseqAnalysis(
 )
 
 # 输出QTLseqr结算结果
-outtb <- df %>% select(CHROM, POS, REF, ALT, AD_REF.LOW, AD_ALT.LOW, 
-              SNPindex.LOW, AD_REF.HIGH, AD_ALT.HIGH, SNPindex.HIGH, 
+outtb <- df %>% select(CHROM, POS, REF, ALT, LowBulk.LPgeno.AD = AD_REF.LOW, LowBulk.HPgeno.AD = AD_ALT.LOW, 
+              SNPindex.LOW, HighBulk.LPgeno.AD = AD_REF.HIGH, HighBulk.HPgeno.AD = AD_ALT.HIGH, SNPindex.HIGH, 
               deltaSNP, nSNPs, tricubeDeltaSNP, CI_95, CI_99)
 write_tsv(outtb, paste(outPrefix, "QTLseqrdeltaSNPindex.txt", sep = "."))
 write_csv(outtb, paste(outPrefix, "QTLseqrdeltaSNPindex.csv", sep = "."))
