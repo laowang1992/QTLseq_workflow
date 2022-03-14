@@ -1,86 +1,9 @@
-####################################################
-# 数据准备
-## 建基因组索引
-cd ${work_dir}/refseq
-# annovar建库
-gffread ${gff} -T -o ${gtf}
-gtfToGenePred  -genePredExt ${gtf} genome_refGene.txt
-retrieve_seq_from_fasta.pl --format refGene --seqfile ${genome} genome_refGene.txt --out genome_refGeneMrna.fa
-#
-samtools faidx ${genome}
-java -jar ${picard} CreateSequenceDictionary R=${genome} O=${genome/fa/dict}
-bowtie2-build ${genome} ${index}
-
-cd ${work_dir}/01.Mapping
-seqtk comp ${genome} | awk '{print $1"\t"$2}' > ref.len
-bedtools makewindows -w 200000 -s 100000 -g ref.len > ref.window.bed
-####################################################
-
-IFS_OLD=$IFS
-IFS=$'\n'
-
-for i in $(cat ${sample})
-do
-
-IFS=$'\t'
-i=($i)
-IFS=$IFS_OLD
-
-# 质控 过滤
-cd ${work_dir}/00.data/01.clean_data
-
-fastp -i ${i[2]} -o ./${i[0]}_1.clean.fastq.gz \
-      -I ${i[3]} -O ./${i[0]}_2.clean.fastq.gz \
-      --json=./${i[0]}.json --html=${i[0]}.html --report_title="${i[0]} fastp report" \
-      --thread=8 --length_required 50
-
-# 比对
-cd ${work_dir}/01.Mapping
-
-bowtie2 --rg-id ${i[0]} --rg "PL:ILLUMINA" --rg "SM:${i[0]}" \
-        -x ${index} \
-        -1 ../00.data/01.clean_data/${i[0]}_1.clean.fastq.gz \
-        -2 ../00.data/01.clean_data/${i[0]}_2.clean.fastq.gz \
-        -p ${thread} \
-        -S ${i[0]}.sam \
-        2> ${i[0]}.log
-
-samtools sort -@ ${thread} -O BAM -o ${i[0]}.sort.bam ${i[0]}.sam
-rm ${i[0]}.sam
-
-done
-
-
-awk '{print $1}' ${sample} | \
-        parallel -j ${thread} -I% --max-args 1 \
-        java -Xmx20g -jar ${picard} \
-        MarkDuplicates I=%.sort.bam O=%.dd.bam \
-        CREATE_INDEX=true REMOVE_DUPLICATES=true \
-        M=%.dd.metics
-
-awk '{print $1}' ${sample} | \
-        parallel -j ${thread} -I% --max-args 1 \
-        samtools index %.dd.bam
-#genomeCoverageBed -ibam test.sort.bam -bga -g ../refseq/TAIR10_genome.fa > test.cov.bedgraph
-awk '{print $1}' ${sample} | \
-        parallel -j ${thread} -I% --max-args 1 \
-        genomeCoverageBed -ibam %.dd.bam -bga -g ${genome} "|" \
-        grep -w "0$" ">" %.0cov.bedgraph
-
-awk '{print $1}' ${sample} | \
-	parallel -j ${thread} -I% --max-args 1 \
-	bedtools bamtobed -i %.dd.bam ">" %.dd.bed
-
+#PBS -N xx
+#PBS -l nods=1:ppn=1
+#PBS -l mem=50gb
+#PBS -q batch
 
 cd ${work_dir}/02.SNP_indel
-
-awk '{print $1}' ${sample} | \
-        parallel -j ${thread} -I% --max-args 1 \
-        java -Xmx20g -jar ${gatk} \
-        -R ${genome} \
-        -T HaplotypeCaller -ERC GVCF \
-        -I ../01.Mapping/%.dd.bam -o %.gatk.g.vcf \
-        "&>" %.HaplotypeCaller.log
 
 ls *g.vcf > GVCFs.list
 #cut -f1 ../00.data/samples.txt | sed 's/$/.gatk.g.vcf/' > GVCFs.list
@@ -146,15 +69,6 @@ fastqc -o ./QC --nogroup --threads ${thread} *clean.fastq.gz
 Rscript dataStat.R
 
 cd ${work_dir}/01.Mapping
-
-for i in $(cut -f1 ${sample})
-do
-bedtools coverage -b $i.dd.bed -a ref.window.bed -mean | \
-	awk '{print $1"\t"$2+1"\t"$3"\t"$4}' > $i.dd.window.depth
-rm $i.dd.bed
-done
-
 Rscript covStat.R ${genome}.fai
 echo -e "Sample,Total read,Mapping read,Mapping rate,Unique mapping read,Unique mapping rate" > align_stat.csv
 for i in $(cut -f1 ${sample}); do perl alignStat.pl $i; done >> align_stat.csv
-

@@ -3,9 +3,9 @@ from NGS data to QTL-seq result
 # 一 QTL-seq原理
 QTL-seq<sup>[[1](#ref)]</sup>是一种将Bulked‐segregant analysis (BSA)<sup>[[2](#ref),[3](#ref)]</sup>和高通量测序相结合，快速定位QTL的方法。目标性状有差异的双亲构建的分离群体中分别选取极端表型个体进行等量混合构建两个极端表型bulked DNA pool并进行测序。随后进行变异分析筛选出双亲间SNP位点并分别计算两个bulked DNA pool中每个SNP位点上某一亲本基因型read覆盖深度占该位点总read深度的比值，即SNP index，通过两个bulked DNA pool的SNP index相减即得到ΔSNP index。在基因组所有区域中，目标基因及其连锁的区域由于根据表型受到相反的选择在两个bulked DNA pool中表现出不同的趋势，因此ΔSNP index会显著偏离0附近；另一方面，于目标形状无关的区域则两个bulked DNA pool则表现为相似的变化趋势，因此ΔSNP index会在0附近波动（图1）。
 <br/>
-![图1 QTL-seq原理示意图](https://user-images.githubusercontent.com/35584208/121320629-e9595300-c93f-11eb-8745-e1f153dd59c6.png)
+![图1 QTL-seq原理示意图](./image/QTLseq原理.png)
 # 二 QTL-seq流程图
-![image](https://user-images.githubusercontent.com/35584208/121321053-5967d900-c940-11eb-9d22-be6614ce71c0.png)
+![image](./image/QTLseq流程.png)
 # 三 QTL-seq分析流程
 ## 1	取样、提取DNA、建库和测序
 选取分离群体中极端表型个体各30-50株以及双亲取幼嫩组织，分别提取DNA并将分离群体极端表型个体按照等量原则混合构建bulked DNA pools，然后进行建库和高通量测序（混池DNA深度宜与单株个数相同）。（具体流程应参考实验设计以及公司测序报告）
