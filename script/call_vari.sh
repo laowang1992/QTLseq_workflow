@@ -11,70 +11,71 @@ samtools faidx ${genome}
 java -jar ${picard} CreateSequenceDictionary R=${genome} O=${genome/fa/dict}
 bowtie2-build ${genome} ${index}
 
-cd ${work_dir}/01.Mapping
-seqtk comp ${genome} | awk '{print $1"\t"$2}' > ref.len
+awk '{print $1"\t"$2}' ${genome}.fai > ref.len
+cp ref.len ${work_dir}/04.Analysis/
 bedtools makewindows -w 200000 -s 100000 -g ref.len > ref.window.bed
 ####################################################
 
-IFS_OLD=$IFS
-IFS=$'\n'
 
-for i in $(cat ${sample})
+cat ${sampleInfo} | while read sample group fq1 fq2
 do
-
-IFS=$'\t'
-i=($i)
-IFS=$IFS_OLD
 
 # 质控 过滤
 cd ${work_dir}/00.data/01.clean_data
 
-fastp -i ${i[2]} -o ./${i[0]}_1.clean.fastq.gz \
-      -I ${i[3]} -O ./${i[0]}_2.clean.fastq.gz \
-      --json=./${i[0]}.json --html=${i[0]}.html --report_title="${i[0]} fastp report" \
-      --thread=8 --length_required 50
+fastp -i ${fq1} -o ./${sample}_1.clean.fastq.gz \
+      -I ${fq2} -O ./${sample}_2.clean.fastq.gz \
+      --json=./${sample}.json --html=${sample}.html --report_title="${sample} fastp report" \
+      --thread=${thread} --length_required 50
 
 # 比对
 cd ${work_dir}/01.Mapping
 
-bowtie2 --rg-id ${i[0]} --rg "PL:ILLUMINA" --rg "SM:${i[0]}" \
+bowtie2 --rg-id ${sample} --rg "PL:ILLUMINA" --rg "SM:${sample}" \
         -x ${index} \
-        -1 ../00.data/01.clean_data/${i[0]}_1.clean.fastq.gz \
-        -2 ../00.data/01.clean_data/${i[0]}_2.clean.fastq.gz \
+        -1 ../00.data/01.clean_data/${sample}_1.clean.fastq.gz \
+        -2 ../00.data/01.clean_data/${sample}_2.clean.fastq.gz \
         -p ${thread} \
-        -S ${i[0]}.sam \
-        2> ${i[0]}.log
+        -S ${sample}.sam \
+        2> ${sample}.log
 
-samtools sort -@ ${thread} -O BAM -o ${i[0]}.sort.bam ${i[0]}.sam
-rm ${i[0]}.sam
+samtools sort -@ ${thread} -O BAM -o ${sample}.sort.bam ${sample}.sam
+# 使用sambamba代替samtools排序和Picard去重复
+# sambamba markdup在batch队列使用28线程时会休眠，卡在这里不动，还是换回samtools和Picard吧
+
+#sambamba view --format=bam --with-header --sam-input --nthreads=${thread} --output-filename ${i[0]}.bam ${i[0]}.sam
+#sambamba sort -t ${thread} -m 20GB --tmpdir=./ -o ${i[0]}.sort.bam ${i[0]}.bam
+#sambamba markdup -r -t ${thread} --tmpdir=./ ${i[0]}.sort.bam ${i[0]}.dd.bam
+rm ${sample}.sam
 
 done
 
 
-awk '{print $1}' ${sample} | \
+awk '{print $1}' ${sampleInfo} | \
         parallel -j ${thread} -I% --max-args 1 \
         java -Xmx20g -jar ${picard} \
         MarkDuplicates I=%.sort.bam O=%.dd.bam \
         CREATE_INDEX=true REMOVE_DUPLICATES=true \
         M=%.dd.metics
+rm *sort.bam
 
-awk '{print $1}' ${sample} | \
+awk '{print $1}' ${sampleInfo} | \
         parallel -j ${thread} -I% --max-args 1 \
         samtools index %.dd.bam
 #genomeCoverageBed -ibam test.sort.bam -bga -g ../refseq/TAIR10_genome.fa > test.cov.bedgraph
-awk '{print $1}' ${sample} | \
+awk '{print $1}' ${sampleInfo} | \
         parallel -j ${thread} -I% --max-args 1 \
         genomeCoverageBed -ibam %.dd.bam -bga -g ${genome} "|" \
         grep -w "0$" ">" %.0cov.bedgraph
 
-awk '{print $1}' ${sample} | \
+awk '{print $1}' ${sampleInfo} | \
 	parallel -j ${thread} -I% --max-args 1 \
 	bedtools bamtobed -i %.dd.bam ">" %.dd.bed
 
 
 cd ${work_dir}/02.SNP_indel
 
-awk '{print $1}' ${sample} | \
+awk '{print $1}' ${sampleInfo} | \
         parallel -j ${thread} -I% --max-args 1 \
         java -Xmx20g -jar ${gatk} \
         -R ${genome} \
@@ -147,14 +148,14 @@ Rscript dataStat.R
 
 cd ${work_dir}/01.Mapping
 
-for i in $(cut -f1 ${sample})
+for i in $(cut -f1 ${sampleInfo})
 do
-bedtools coverage -b $i.dd.bed -a ref.window.bed -mean | \
+bedtools coverage -b $i.dd.bed -a ${work_dir}/refseq/ref.window.bed -mean | \
 	awk '{print $1"\t"$2+1"\t"$3"\t"$4}' > $i.dd.window.depth
 rm $i.dd.bed
 done
 
 Rscript covStat.R ${genome}.fai
 echo -e "Sample,Total read,Mapping read,Mapping rate,Unique mapping read,Unique mapping rate" > align_stat.csv
-for i in $(cut -f1 ${sample}); do perl alignStat.pl $i; done >> align_stat.csv
+for i in $(cut -f1 ${sampleInfo}); do perl alignStat.pl $i; done >> align_stat.csv
 

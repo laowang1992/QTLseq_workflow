@@ -170,8 +170,8 @@ hh <- hh %>%
 
 ##
 SNPnumber <- hh %>% group_by(CHROM) %>% count()
-write_tsv(x = SNPnumber, path = paste(outPrefix, "SNP_number_per_chr.txt", sep = "."))
-write_csv(x = SNPnumber, path = paste(outPrefix, "SNP_number_per_chr.csv", sep = "."))
+write_tsv(x = SNPnumber, file = paste(outPrefix, "SNP_number_per_chr.txt", sep = "."))
+write_csv(x = SNPnumber, file = paste(outPrefix, "SNP_number_per_chr.csv", sep = "."))
 ##
 options(scipen = 200)
 colourCount = dim(chromColor)[[1]]
@@ -231,8 +231,8 @@ colnames(d) <- c("CHROM", "win_start", "win_mid", "win_end", "SNP_N",
                  paste(highB, "SNP_INDEX", sep = "."), 
                  paste(lowB, "SNP_INDEX", sep = "."), "delta_SNP_INDEX")
 
-write_tsv(x = d, path = paste(outPrefix, "SlidingWindow_SNPindex.txt", sep = "."))
-write_csv(x = d, path = paste(outPrefix, "SlidingWindow_SNPindex.csv", sep = "."))
+write_tsv(x = d, file = paste(outPrefix, "SlidingWindow_SNPindex.txt", sep = "."))
+write_csv(x = d, file = paste(outPrefix, "SlidingWindow_SNPindex.csv", sep = "."))
 
 # 加上绘图颜色信息
 d <- chromColor %>% left_join(d, by = "CHROM")

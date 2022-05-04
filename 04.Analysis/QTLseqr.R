@@ -19,6 +19,7 @@ p <- add_argument(p, "--minQ", help = "Minimum QUAL for variation", type = "nume
 p <- add_argument(p, "--bulkSizeH", help = "Bulk size with high phenotype", type = "numeric")
 p <- add_argument(p, "--bulkSizeL", help = "Bulk size with low phenotype", type = "numeric")
 
+p <- add_argument(p, "--minGQ", help = "Minimum GQ for parent genotype", type = "numeric", default = 30)
 #
 p <- add_argument(p, "--minHPdp", help = "Minimum depth for high parent", type = "numeric", default = 10)
 p <- add_argument(p, "--maxHPdp", help = "Maxmum depth for high parent", type = "numeric", default = 10000)
@@ -29,7 +30,9 @@ p <- add_argument(p, "--maxHBdp", help = "Maxmum depth for high bulk", type = "n
 p <- add_argument(p, "--minLBdp", help = "Minimum depth for low bulk", type = "numeric", default = 10)
 p <- add_argument(p, "--maxLBdp", help = "Maxmum depth for low bulk", type = "numeric", default = 10000)
 #
-p <- add_argument(p, "--winSize", help = "Window size for sliding window statistics", type = "numeric", default = 2000000)
+p <- add_argument(p, "--winSize", help = "Window size for sliding window statistics", type = "numeric", default = 1000000)
+p <- add_argument(p, "--winStep", help = "Window step for sliding window statistics", type = "numeric", default = 200000)
+
 #
 p <- add_argument(p, "--minN", help = "Minimum SNP number in a window for plot", type = "numeric", default = 10)
 #
@@ -42,8 +45,11 @@ write.table(argv, paste(argv$out, "QTLseqrparameter.txt", sep = "."), quote = F,
 
 library(tidyverse)
 library(QTLseqr)
+library(windowscanr)
 library(cowplot)
+library(CMplot)
 library(ggsci)
+library(RColorBrewer)
 
 filename <- argv$input
 outPrefix <- argv$out
@@ -55,6 +61,7 @@ lowP <- argv$lowP
 highB <- argv$highB
 lowB <- argv$lowB
 popType <- argv$popType
+minGQ <- argv$minGQ
 minHPdp <- argv$minHPdp
 maxHPdp <- argv$maxHPdp
 minLPdp <- argv$minLPdp
@@ -64,50 +71,55 @@ maxHBdp <- argv$maxHBdp
 minLBdp <- argv$minLBdp
 maxLBdp <- argv$maxLBdp
 winSize <- argv$winSize
+winStep <- argv$winStep
 minN <- argv$minN
 width <- argv$width
 height <- argv$height
 
 if (FALSE) {
   ## file name
-  filename <- "./xq_bsa_M1F_N1F.filter.SNPs.table"
-  outPrefix <- "xqBSA"
+  filename <- "./purpleLeaf.filter.SNPs.table.gz"
+  outPrefix <- "purpleLeaf"
   ## filter SNP Quality
-  minQ <- 300
+  minQ <- 50
   ##
   bulkSizeH <- 30
   bulkSizeL <- 30
   ## sample name
-  highP <- "s8417"
-  lowP <- "FM195BML"
-  highB <- "N1F"
-  lowB <- "M1F"
-  
+  highP <- "PP"
+  lowP <- "PG"
+  highB <- "F2P"
+  lowB <- "F2G"
   ##
   popType <- "F2"  # F2 ro RIL
-  
+  ##
+  minGQ <- 30
   ## filter depth parameter
-  minHPdp <- 10
-  maxHPdp <- 100
+  minHPdp <- 6
+  maxHPdp <- 1000
   
-  minLPdp <- 10
-  maxLPdp <- 100
+  minLPdp <- 6
+  maxLPdp <- 1000
   
-  minHBdp <- 10
-  maxHBdp <- 100
+  minHBdp <- 6
+  maxHBdp <- 1000
   
-  minLBdp <- 10
-  maxLBdp <- 100
+  minLBdp <- 6
+  maxLBdp <- 1000
   
   ## sliding window parameter
-  winSize <- 2000000
+  winSize <- 1000000
+  winStep <- 100000
   #
-  minN <- 10
+  minN <- 5
   ##
   width <- 15
   height <- 5
 }
 
+## 读取数据
+chr <- read_tsv("./chromColor.txt")
+len <- read_tsv(file = "./ref.len", col_names = c("CHROM", "Len"))
 
 df <- read_tsv(file = filename) %>%
   select(CHROM, POS, REF, ALT, 
@@ -135,21 +147,65 @@ df <- read_tsv(file = filename) %>%
                        lowParent.PL = paste(lowP, "PL", sep = "."),
                        highBulk.PL = paste(highB, "PL", sep = "."),
                        lowBulk.PL = paste(lowB, "PL", sep = "."))
-dd1 <- df %>% filter(highParent.GT == paste(REF, REF, sep = "/") | highParent.GT == paste(ALT, ALT, sep = "/")) %>%
+
+dd1 <- df %>% filter(highParent.GQ >= minGQ, lowParent.GQ >= minGQ) %>%
+  filter(highParent.GT == paste(REF, REF, sep = "/") | highParent.GT == paste(ALT, ALT, sep = "/")) %>%
   filter(lowParent.GT == paste(REF, REF, sep = "/") | lowParent.GT == paste(ALT, ALT, sep = "/")) %>%
-  filter(highParent.GT != lowParent.GT) %>% 
+  filter(highParent.GT != lowParent.GT)
+## 
+dp <- dd1 %>% dplyr::select(HP = highParent.DP, LP = lowParent.DP, HB = highBulk.DP, LB = lowBulk.DP) %>%
+  gather(key = "sample", value = "depth")
+dp$sample <- factor(dp$sample, levels = c("HP", "LP", "HB", "LB"), labels = c(highP, lowP, highB, lowB))
+P_dp <- ggplot(dp, aes(x = depth)) + 
+  geom_histogram(aes(y = ..density.., fill = sample), binwidth = 2) +
+  geom_density() + 
+  scale_x_continuous(limits = c(0, 100)) +
+  theme_half_open() +
+  facet_wrap(~sample, nrow = 1)
+ggsave(P_dp, filename = paste(outPrefix, "depth_desity.pdf", sep = "."), height = 3.5, width = 10)
+ggsave(P_dp, filename = paste(outPrefix, "depth_desity.png", sep = "."), height = 3.5, width = 10, dpi = 500)
+remove(P_dp)
+
+dd2 <- dd1 %>% separate(highBulk.AD, c("highBulk.AD_0", "highBulk.AD_1"), sep = ",", convert = TRUE) %>%
+  separate(lowBulk.AD, c("lowBulk.AD_0", "lowBulk.AD_1"), sep = ",", convert = TRUE) %>%
+  separate(highBulk.PL, c("highBulk.PL_00", "highBulk.PL_01", "highBulk.PL_11"), sep = ",", convert = TRUE) %>%
+  separate(lowBulk.PL, c("lowBulk.PL_00", "lowBulk.PL_01", "lowBulk.PL_11"), sep = ",", convert = TRUE)
+
+dd3 <- dd2 %>% filter(!((highBulk.AD_0 / (highBulk.AD_0 + highBulk.AD_1) < 0.3) & 
+                          (lowBulk.AD_0 / (lowBulk.AD_0 + lowBulk.AD_1) < 0.3)) | 
+                        ((highBulk.AD_0 / (highBulk.AD_0 + highBulk.AD_1) > 0.7) & 
+                           (lowBulk.AD_0 / (lowBulk.AD_0 + lowBulk.AD_1) > 0.7))) %>% 
   filter(highParent.DP > minHPdp, highParent.DP < maxHPdp,
          lowParent.DP > minLPdp, lowParent.DP < maxLPdp,
          highBulk.DP > minHBdp, highBulk.DP < maxHBdp,
          lowBulk.DP > minLBdp, lowBulk.DP < maxLBdp)
 
-dd2 <- dd1 %>% separate(highBulk.AD, c("highBulk.AD_0", "highBulk.AD_1"), sep = ",") %>%
-  separate(lowBulk.AD, c("lowBulk.AD_0", "lowBulk.AD_1"), sep = ",") %>%
-  separate(highBulk.PL, c("highBulk.PL_00", "highBulk.PL_01", "highBulk.PL_11"), sep = ",") %>%
-  separate(lowBulk.PL, c("lowBulk.PL_00", "lowBulk.PL_01", "lowBulk.PL_11"), sep = ",")
 
+##
+SNPnumber <- dd3 %>% group_by(CHROM) %>% count()
+write_tsv(x = SNPnumber, file = paste(outPrefix, "SNP_number_per_chr.txt", sep = "."))
+write_csv(x = SNPnumber, file = paste(outPrefix, "SNP_number_per_chr.csv", sep = "."))
+##
+options(scipen = 200)
+colourCount = dim(chr)[[1]]
+getPalette = colorRampPalette(brewer.pal(8, "Set1"))
+#df$LABEL <- factor(df$LABEL, levels = chromColor$LABEL)
+chr$LABEL <- factor(chr$LABEL, levels = chr$LABEL)
+Phist <- chr %>% left_join(dd3, by = "CHROM") %>% ggplot(aes(x = POS)) +
+  geom_histogram(aes(fill = LABEL), color = NA, binwidth = 1000000) +
+  labs(x = NULL, y = "SNP Count / 1Mb", fill = "Chrom") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_fill_manual(values = getPalette(colourCount)) +
+  theme_half_open() +
+  theme(strip.text = element_text(color = NA, size = 0.1),
+        strip.background = element_rect(color = NA, fill = NA)) +
+  facet_grid(LABEL ~ .)
+ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.pdf", sep = "."), width = 9, height = dim(chr)[[1]] * 0.6 + 0.5)
+ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.png", sep = "."), width = 9, height = dim(chr)[[1]] * 0.6 + 0.5, dpi = 500)
+remove(Phist)
 
-dd3  <- dd2 %>% mutate(highBulk.AD = if_else(highParent.GT == paste(ALT, ALT, sep = "/"), 
+## 
+dd4  <- dd3 %>% mutate(highBulk.AD = if_else(highParent.GT == paste(ALT, ALT, sep = "/"), 
                                              paste(highBulk.AD_0, highBulk.AD_1, sep = ","), 
                                              paste(highBulk.AD_1, highBulk.AD_0, sep = ",")),
                        lowBulk.AD = if_else(highParent.GT == paste(ALT, ALT, sep = "/"),
@@ -164,21 +220,92 @@ dd3  <- dd2 %>% mutate(highBulk.AD = if_else(highParent.GT == paste(ALT, ALT, se
   select(CHROM, POS, REF, ALT, 
          highBulk.AD, highBulk.DP, highBulk.GQ, highBulk.PL,
          lowBulk.AD, lowBulk.DP, lowBulk.GQ, lowBulk.PL)
+write_tsv(dd4, paste(outPrefix, "reform.txt", sep = "."))
 
-write_tsv(dd3, paste(outPrefix, "reform.txt", sep = "."))
+dd5 <- dd3 %>% mutate(HB.HP.DP = if_else(highParent.GT == paste(REF, REF, sep = "/"),
+                                         highBulk.AD_0, highBulk.AD_1),
+                      HB.LP.DP = if_else(highParent.GT == paste(REF, REF, sep = "/"),
+                                         highBulk.AD_1, highBulk.AD_0),
+                      LB.HP.DP = if_else(highParent.GT == paste(REF, REF, sep = "/"),
+                                         lowBulk.AD_0, lowBulk.AD_1),
+                      LB.LP.DP = if_else(highParent.GT == paste(REF, REF, sep = "/"),
+                                         lowBulk.AD_1, lowBulk.AD_0)) %>%
+  dplyr::select(CHROM, POS, HB.HP.DP, HB.LP.DP, LB.HP.DP, LB.LP.DP)
+##
+slidwin <- winScan(x = dd5,
+              groups = "CHROM",
+              position = "POS",
+              values = c("HB.HP.DP", "HB.LP.DP", "LB.HP.DP", "LB.LP.DP"),
+              win_size = winSize,
+              win_step = winStep,
+              funs = c("sum")) %>% as_tibble() %>% 
+  mutate(HB.index = HB.HP.DP_sum / (HB.HP.DP_sum + HB.LP.DP_sum),
+         LB.index = LB.HP.DP_sum / (LB.HP.DP_sum + LB.LP.DP_sum),
+         delta.index = HB.index - LB.index) %>%
+  dplyr::select(CHROM, POS = win_mid, HB.index, LB.index, delta.index, SNPn = HB.HP.DP_n)
+##
+slidwin <- chr %>% left_join(slidwin, by = "CHROM")
+slidwin$CHROM <- factor(slidwin$CHROM, levels = chr$CHROM)
 
+pdf(file = paste(outPrefix, "delta_SNP_index.pdf", sep = "."), width = width, height = height)
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = POS, delta_index = delta.index), 
+       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
+       ylab = "delta SNP index", ylim = c(-1, 1), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
+       file.output = FALSE)
+dev.off()
+png(filename = paste(outPrefix, "delta_SNP_index.png", sep = "."), width = width, height = height, units = "in", res = 500)
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = POS, delta.index), 
+       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
+       ylab = "delta SNP index", ylim = c(-1, 1), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
+       file.output = FALSE)
+dev.off()
+
+#
+pdf(file = paste(outPrefix, highB, "SNP_index.pdf", sep = "."), width = width, height = height)
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = POS, HB.index), 
+       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
+       ylab = "SNP index", ylim = c(0, 1), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
+       file.output = FALSE)
+dev.off()
+png(filename = paste(outPrefix, highB, "SNP_index.png", sep = "."), width = width, height = height, units = "in", res = 500)
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = POS, HB.index), 
+       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
+       ylab = "SNP index", ylim = c(0, 1), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
+       file.output = FALSE)
+dev.off()
+
+#
+pdf(file = paste(outPrefix, lowB, "SNP_index.pdf", sep = "."), width = width, height = height)
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = POS, LB.index), 
+       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
+       ylab = "SNP index", ylim = c(0, 1), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
+       file.output = FALSE)
+dev.off()
+png(filename = paste(outPrefix, lowB, "SNP_index.png", sep = "."), width = width, height = height, units = "in", res = 500)
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = POS, LB.index), 
+       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
+       ylab = "SNP index", ylim = c(0, 1), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
+       file.output = FALSE)
+dev.off()
+
+#### 
 df <- importFromGATK(file = paste(outPrefix, "reform.txt", sep = "."),
                      highBulk = "highBulk",
                      lowBulk = "lowBulk",
                      #chr=c('C1','C2',C3)
                      )
-chromColor <- read_tsv("./chromColor.txt")
-df <- chromColor %>% left_join(df, by = "CHROM")
+df <- chr %>% left_join(df, by = "CHROM")
 
-df <- runGprimeAnalysis(
-  SNPset = df,
-  windowSize = winSize,    # window size
-  outlierFilter = "deltaSNP")
+#df <- runGprimeAnalysis(
+#  SNPset = df,
+#  windowSize = winSize,    # window size
+#  outlierFilter = "deltaSNP")
 
 df <- runQTLseqAnalysis(
   SNPset = df,
@@ -199,38 +326,79 @@ write_csv(outtb, paste(outPrefix, "QTLseqrdeltaSNPindex.csv", sep = "."))
 #plotQTLStats(SNPset = df, var = "Gprime", plotThreshold = TRUE, q = 0.01)
 #plotQTLStats(SNPset = df, var = "deltaSNP", plotIntervals = TRUE) + theme_half_open()
 # add chrom color infomation
-df$LABEL <- factor(df$LABEL, levels = chromColor$LABEL)
-p <- df %>% filter(nSNPs > minN) %>%
-  ggplot() +
-  geom_line(aes(x = POS, y = CI_95), color = "gray") +
-  geom_line(aes(x = POS, y = -CI_95), color = "gray") +
-  geom_line(aes(x = POS, y = tricubeDeltaSNP, color = COLOR), size = 1) +
-  ylim(-1, 1) +
-  labs(x = NULL, y = "delta SNP index") +
-  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
-  scale_color_aaas() +
-  theme_half_open() +
-  theme(legend.position = "none") +
-  facet_grid(. ~ LABEL, scales = "free_x", space = "free_x")
-ggsave(filename = paste(outPrefix, "deltaSNPindex.95CI.pdf", sep = "."), width = width, height = height)
-ggsave(filename = paste(outPrefix, "deltaSNPindex.95CI.png", sep = "."), width = width, height = height, dpi = 500)
+source("./plot.R")
+#len <- chr %>% left_join(chr, by = "CHROM")
+df$LABEL <- factor(df$LABEL, levels = chr$LABEL)
+##
+pdf(file = paste(outPrefix, "deltaSNPindex.95CI.pdf", sep = "."), width = width, height = height)
+plotIndex(df = outtb, chr = chr, len = len, CI = "CI_95", nSNPs = "nSNPs", n = minN, 
+          index = "tricubeDeltaSNP", band = 0.005, color = c("#177cb0","#f36838"), 
+          ylim = c(-1, 1), ylab = "Delta SNP index", size = 1.5, axis.size = 1, 
+          axis.lab.size = 1, axis.title.size = 1.5, type = "l")
+dev.off()
+#
+png(filename = paste(outPrefix, "deltaSNPindex.95CI.png", sep = "."), width = width, height = height, units = "in", res = 500)
+plotIndex(df = outtb, chr = chr, len = len, CI = "CI_95", nSNPs = "nSNPs", n = minN, 
+          index = "tricubeDeltaSNP", band = 0.005, color = c("#177cb0","#f36838"), 
+          ylim = c(-1, 1), ylab = "Delta SNP index", size = 1.5, axis.size = 1, 
+          axis.lab.size = 1, axis.title.size = 1.5, type = "l")
+dev.off()
 
-p <- df %>% filter(nSNPs > minN) %>%
-  ggplot() +
-  geom_line(aes(x = POS, y = CI_99), color = "gray") +
-  geom_line(aes(x = POS, y = -CI_99), color = "gray") +
-  geom_line(aes(x = POS, y = tricubeDeltaSNP, color = COLOR), size = 1) +
-  ylim(-1, 1) +
-  labs(x = NULL, y = "delta SNP index") +
-  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
-  scale_color_aaas() +
-  theme_half_open() +
-  theme(legend.position = "none") +
-  facet_grid(. ~ LABEL, scales = "free_x", space = "free_x")
-ggsave(filename = paste(outPrefix, "deltaSNPindex.99CI.pdf", sep = "."), width = width, height = height)
-ggsave(filename = paste(outPrefix, "deltaSNPindex.99CI.png", sep = "."), width = width, height = height, dpi = 500)
+##
+pdf(file = paste(outPrefix, "deltaSNPindex.99CI.pdf", sep = "."), width = width, height = height)
+plotIndex(df = outtb, chr = chr, len = len, CI = "CI_99", nSNPs = "nSNPs", n = minN, 
+          index = "tricubeDeltaSNP", band = 0.005, color = c("#177cb0","#f36838"), 
+          ylim = c(-1, 1), ylab = "Delta SNP index", size = 1.5, axis.size = 1, 
+          axis.lab.size = 1, axis.title.size = 1.5, type = "l")
+dev.off()
+
+png(filename = paste(outPrefix, "deltaSNPindex.99CI.png", sep = "."), width = width, height = height, units = "in", res = 500)
+plotIndex(df = outtb, chr = chr, len = len, CI = "CI_99", nSNPs = "nSNPs", n = minN, 
+          index = "tricubeDeltaSNP", band = 0.005, color = c("#177cb0","#f36838"), 
+          ylim = c(-1, 1), ylab = "Delta SNP index", size = 1.5, axis.size = 1, 
+          axis.lab.size = 1, axis.title.size = 1.5, type = "l")
+dev.off()
+
+
+#p <- df %>% filter(nSNPs > minN) %>%
+#  ggplot() +
+#  geom_line(aes(x = POS, y = CI_95), color = "gray") +
+#  geom_line(aes(x = POS, y = -CI_95), color = "gray") +
+#  geom_line(aes(x = POS, y = tricubeDeltaSNP, color = COLOR), size = 1) +
+#  ylim(-1, 1) +
+#  labs(x = NULL, y = "delta SNP index") +
+#  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
+#  scale_color_aaas() +
+#  theme_half_open() +
+#  theme(legend.position = "none") +
+#  facet_grid(. ~ LABEL, scales = "free_x", space = "free_x")
+#ggsave(filename = paste(outPrefix, "deltaSNPindex.95CI.pdf", sep = "."), width = width, height = height)
+#ggsave(filename = paste(outPrefix, "deltaSNPindex.95CI.png", sep = "."), width = width, height = height, dpi = 500)
+#
+#p <- df %>% filter(nSNPs > minN) %>%
+#  ggplot() +
+#  geom_line(aes(x = POS, y = CI_99), color = "gray") +
+#  geom_line(aes(x = POS, y = -CI_99), color = "gray") +
+#  geom_line(aes(x = POS, y = tricubeDeltaSNP, color = COLOR), size = 1) +
+#  ylim(-1, 1) +
+#  labs(x = NULL, y = "delta SNP index") +
+#  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
+#  scale_color_aaas() +
+#  theme_half_open() +
+#  theme(legend.position = "none") +
+#  facet_grid(. ~ LABEL, scales = "free_x", space = "free_x")
+#ggsave(filename = paste(outPrefix, "deltaSNPindex.99CI.pdf", sep = "."), width = width, height = height)
+#ggsave(filename = paste(outPrefix, "deltaSNPindex.99CI.png", sep = "."), width = width, height = height, dpi = 500)
 
 #export summary CSV
 #getQTLTable(SNPset = df, alpha = 0.01, export = TRUE, fileName = "Gprime_QTL.csv",method="Gprime")
+#x <- chr %>% left_join(df, by = "CHROM") %>% select(-CHROM, -COLOR) %>% rename(CHROM = LABEL)
 getQTLTable(SNPset = df, interval =95, export = TRUE, fileName = paste(outPrefix, "95CI.csv", sep = "."), method="QTLseq")
 getQTLTable(SNPset = df, interval =99, export = TRUE, fileName = paste(outPrefix, "99CI.csv", sep = "."), method="QTLseq")
+
+
+## plot target chrom
+options(scipen=200)
+plotTargetChrom(df = df, CI = 95, minN = minN, outPrefix = outPrefix, chr = chr, len = len)
+plotTargetChrom(df = df, CI = 99, minN = minN, outPrefix = outPrefix, chr = chr, len = len)
+

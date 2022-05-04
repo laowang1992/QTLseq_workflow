@@ -25,7 +25,7 @@ export picard=/public/home/wangpf/tools/picard-tools-2.23.3/picard.jar
 export gatk=/public/home/wangpf/tools/GenomeAnalysisTK-3.8-0-ge9d806836/GenomeAnalysisTK.jar
 export DISCVRSeq=/public/home/wangpf/tools/DISCVRSeq/DISCVRSeq-1.18.jar
 export snpEff=/public/home/wangpf/tools/snpEff/snpEff.jar
-export sample=${work_dir}/00.data/samples.txt
+export sampleInfo=${work_dir}/00.data/samples.txt
 export filename=BSA
 export thread=28
 
@@ -39,7 +39,7 @@ export highB=
 export lowB=
 
 export minQ=100
-
+export minGQ=30					# 对于parent GQ参数过滤
 export minHPdp=10
 export maxHPdp=10000			# 这里写10000相当于不对最高覆盖度过滤
 export minLPdp=10
@@ -54,10 +54,9 @@ export minN=10					# 如果每个window的SNP数小于minN，则绘图时略过
 export width=15
 export height=5
 # dotplot
-export winSize1=500000
-export winStep1=250000
+export winSize=1000000
+export winStep=250000
 # QTLseqr plot
 export bulkSizeH=
 export bulkSizeL=
 export popType=RIL				# RIL or F2
-export winSize2=2000000

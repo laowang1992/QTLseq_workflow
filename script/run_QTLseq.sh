@@ -30,6 +30,7 @@
 . ./.conf
 
 ## call variation
+cd ${work_dir}/script
 sh call_vari.sh
 
 ##
@@ -45,7 +46,7 @@ if [ $qtlseq = 1 ]; then
 		--minLPdp ${minHPdp} --maxLPdp ${maxLPdp} \
 		--minHBdp ${minHBdp} --maxHBdp ${maxHBdp} \
 		--minLBdp ${minHBdp} --maxLBdp ${maxLBdp} \
-		--winSize ${winSize1} --winStep ${winStep1} \
+		--winSize ${winSize} --winStep ${winStep} \
 		--minN ${minN} \
 		--width ${width} --height ${height}
 
@@ -53,13 +54,13 @@ if [ $qtlseq = 1 ]; then
 		--input ${filename}.filter.SNPs.table --out ${out} \
 		--highP ${highP} --lowP ${lowP} --highB ${highB} --lowB ${lowB} \
 		--bulkSizeH ${bulkSizeH} --bulkSizeL ${bulkSizeL} \
-		--minQ ${minQ} \
+		--minQ ${minQ} --minGQ ${minGQ}\
 		--minHPdp ${minHPdp} --maxHPdp ${maxHPdp} \
 		--minLPdp ${minHPdp} --maxLPdp ${maxLPdp} \
 		--minHBdp ${minHBdp} --maxHBdp ${maxHBdp} \
 		--minLBdp ${minHBdp} --maxLBdp ${maxLBdp} \
 		--popType ${popType} \
-		--winSize ${winSize2} \
+		--winSize ${winSize} --winStep ${winStep} \
 		--minN ${minN} \
 		--width ${width} --height ${height}
 fi
