@@ -50,7 +50,7 @@ rm ${sample}.sam
 
 done
 
-
+cd ${work_dir}/01.Mapping
 awk '{print $1}' ${sampleInfo} | \
         parallel -j ${thread} -I% --max-args 1 \
         java -Xmx20g -jar ${picard} \
@@ -126,6 +126,9 @@ java -Xmx50g -jar ${gatk} \
 grep -v "##" ${filename}.filter.SNPs.vcf | sed 's/^#CHROM/CHROM/' > ../04.Analysis/${filename}.filter.SNPs.txt
 
 java -jar ${DISCVRSeq} VariantQC -O ${filename}.flt.report.html -R ${genome} -V ${filename}.flt.vcf
+
+${work_dir}/04.Analysis
+gzip ${filename}.filter.SNPs.txt ${filename}.filter.SNPs.table
 
 # annotation
 cd ${work_dir}/03.Annotation

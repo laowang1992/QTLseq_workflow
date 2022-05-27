@@ -2,9 +2,11 @@
 # parse parameter ---------------------------------------------------------
 library(argparser, quietly=TRUE)
 # Create a parser
-p <- arg_parser("a program for BSA, TABEL file from GATK as input")
+p <- arg_parser("a program for QTLseq, TABEL file from GATK as input, 2 parent is needed")
 
 ## Add command line arguments
+#
+p <- add_argument(p, "--list", short = "-l", help = "list table header", flag = TRUE)
 #
 p <- add_argument(p, "--input", help = "TABEL file from GATK", type = "character")
 p <- add_argument(p, "--out", help = "A prefix for output file", type = "character")
@@ -41,6 +43,13 @@ p <- add_argument(p, "--height", help = "Delta SNP index plot height", type = "n
 
 # Parse the command line arguments
 argv <- parse_args(p)
+#
+if (argv$list) {
+  df <- read.table(argv$input, nrows = 1, header = T)
+  col_name <- colnames(df)
+  print(col_name)
+  quit(save = "no")
+}
 write.table(argv, paste(argv$out, "QTLseqrparameter.txt", sep = "."), quote = F, sep = "\t", row.names = F)
 
 library(tidyverse)

@@ -2,11 +2,13 @@
 # parse parameter ---------------------------------------------------------
 library(argparser, quietly=TRUE)
 # Create a parser
-p <- arg_parser("a program for BSA")
+p <- arg_parser("a program for QTLseq, a vcf file as input, 2 parent is needed")
 
 ## Add command line arguments
 #
-p <- add_argument(p, "--input", help = "input file for BSA", type = "character")
+p <- add_argument(p, "--list", short = "-l", help = "list table header", flag = TRUE)
+#
+p <- add_argument(p, "--input", help = "input vcf file for QTLseq", type = "character")
 p <- add_argument(p, "--out", help = "A prefix for output file", type = "character")
 p <- add_argument(p, "--highP", help = "The parent name with high phenotype", type = "character")
 p <- add_argument(p, "--lowP", help = "The parent name with low phenotype", type = "character")
@@ -35,6 +37,13 @@ p <- add_argument(p, "--height", help = "Delta SNP index plot height", type = "n
 
 # Parse the command line arguments
 argv <- parse_args(p)
+#
+if (argv$list) {
+  df <- read.table(argv$input, nrows = 1, header = T)
+  col_name <- colnames(df)
+  print(col_name)
+  quit(save = "no")
+}
 
 filename <- argv$input
 outPrefix <- argv$out
