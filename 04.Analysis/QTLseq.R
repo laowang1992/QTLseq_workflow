@@ -118,7 +118,7 @@ if (FALSE) {
   
   ## sliding window parameter
   winSize <- 1000000
-  winStep <- 100000
+  winStep <- 200000
   #
   minN <- 5
   ##
@@ -161,8 +161,19 @@ dd1 <- df %>% filter(highParent.GQ >= minGQ, lowParent.GQ >= minGQ) %>%
   filter(highParent.GT == paste(REF, REF, sep = "/") | highParent.GT == paste(ALT, ALT, sep = "/")) %>%
   filter(lowParent.GT == paste(REF, REF, sep = "/") | lowParent.GT == paste(ALT, ALT, sep = "/")) %>%
   filter(highParent.GT != lowParent.GT)
+
+dd2 <- dd1 %>% separate(highBulk.AD, c("highBulk.AD_0", "highBulk.AD_1"), sep = ",", convert = TRUE) %>%
+  separate(lowBulk.AD, c("lowBulk.AD_0", "lowBulk.AD_1"), sep = ",", convert = TRUE) %>%
+  separate(highBulk.PL, c("highBulk.PL_00", "highBulk.PL_01", "highBulk.PL_11"), sep = ",", convert = TRUE) %>%
+  separate(lowBulk.PL, c("lowBulk.PL_00", "lowBulk.PL_01", "lowBulk.PL_11"), sep = ",", convert = TRUE)
+
 ## 
-dp <- dd1 %>% dplyr::select(HP = highParent.DP, LP = lowParent.DP, HB = highBulk.DP, LB = lowBulk.DP) %>%
+dd3 <- dd2 %>% filter(!((highBulk.AD_0 / (highBulk.AD_0 + highBulk.AD_1) < 0.3) & 
+                          (lowBulk.AD_0 / (lowBulk.AD_0 + lowBulk.AD_1) < 0.3)) | 
+                        ((highBulk.AD_0 / (highBulk.AD_0 + highBulk.AD_1) > 0.7) & 
+                           (lowBulk.AD_0 / (lowBulk.AD_0 + lowBulk.AD_1) > 0.7)))
+## 
+dp <- dd3 %>% dplyr::select(HP = highParent.DP, LP = lowParent.DP, HB = highBulk.DP, LB = lowBulk.DP) %>%
   gather(key = "sample", value = "depth")
 dp$sample <- factor(dp$sample, levels = c("HP", "LP", "HB", "LB"), labels = c(highP, lowP, highB, lowB))
 P_dp <- ggplot(dp, aes(x = depth)) + 
@@ -175,23 +186,15 @@ ggsave(P_dp, filename = paste(outPrefix, "depth_desity.pdf", sep = "."), height 
 ggsave(P_dp, filename = paste(outPrefix, "depth_desity.png", sep = "."), height = 3.5, width = 10, dpi = 500)
 remove(P_dp)
 
-dd2 <- dd1 %>% separate(highBulk.AD, c("highBulk.AD_0", "highBulk.AD_1"), sep = ",", convert = TRUE) %>%
-  separate(lowBulk.AD, c("lowBulk.AD_0", "lowBulk.AD_1"), sep = ",", convert = TRUE) %>%
-  separate(highBulk.PL, c("highBulk.PL_00", "highBulk.PL_01", "highBulk.PL_11"), sep = ",", convert = TRUE) %>%
-  separate(lowBulk.PL, c("lowBulk.PL_00", "lowBulk.PL_01", "lowBulk.PL_11"), sep = ",", convert = TRUE)
-
-dd3 <- dd2 %>% filter(!((highBulk.AD_0 / (highBulk.AD_0 + highBulk.AD_1) < 0.3) & 
-                          (lowBulk.AD_0 / (lowBulk.AD_0 + lowBulk.AD_1) < 0.3)) | 
-                        ((highBulk.AD_0 / (highBulk.AD_0 + highBulk.AD_1) > 0.7) & 
-                           (lowBulk.AD_0 / (lowBulk.AD_0 + lowBulk.AD_1) > 0.7))) %>% 
-  filter(highParent.DP > minHPdp, highParent.DP < maxHPdp,
+## 根据深度过滤
+dd4 <- dd3 %>% filter(highParent.DP > minHPdp, highParent.DP < maxHPdp,
          lowParent.DP > minLPdp, lowParent.DP < maxLPdp,
          highBulk.DP > minHBdp, highBulk.DP < maxHBdp,
          lowBulk.DP > minLBdp, lowBulk.DP < maxLBdp)
 
 
 ##
-SNPnumber <- dd3 %>% group_by(CHROM) %>% count()
+SNPnumber <- dd4 %>% group_by(CHROM) %>% count()
 write_tsv(x = SNPnumber, file = paste(outPrefix, "SNP_number_per_chr.txt", sep = "."))
 write_csv(x = SNPnumber, file = paste(outPrefix, "SNP_number_per_chr.csv", sep = "."))
 ##
@@ -200,7 +203,7 @@ colourCount = dim(chr)[[1]]
 getPalette = colorRampPalette(brewer.pal(8, "Set1"))
 #df$LABEL <- factor(df$LABEL, levels = chromColor$LABEL)
 chr$LABEL <- factor(chr$LABEL, levels = chr$LABEL)
-Phist <- chr %>% left_join(dd3, by = "CHROM") %>% ggplot(aes(x = POS)) +
+Phist <- chr %>% left_join(dd4, by = "CHROM") %>% ggplot(aes(x = POS)) +
   geom_histogram(aes(fill = LABEL), color = NA, binwidth = 1000000) +
   labs(x = NULL, y = "SNP Count / 1Mb", fill = "Chrom") +
   scale_x_continuous(expand = c(0, 0)) +
@@ -213,8 +216,8 @@ ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.pdf", sep 
 ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.png", sep = "."), width = 9, height = dim(chr)[[1]] * 0.6 + 0.5, dpi = 500)
 remove(Phist)
 
-## 
-dd4  <- dd3 %>% mutate(highBulk.AD = if_else(highParent.GT == paste(ALT, ALT, sep = "/"), 
+## 导出用于QTLseqr的数据
+dd5  <- dd4 %>% mutate(highBulk.AD = if_else(highParent.GT == paste(ALT, ALT, sep = "/"), 
                                              paste(highBulk.AD_0, highBulk.AD_1, sep = ","), 
                                              paste(highBulk.AD_1, highBulk.AD_0, sep = ",")),
                        lowBulk.AD = if_else(highParent.GT == paste(ALT, ALT, sep = "/"),
@@ -229,9 +232,10 @@ dd4  <- dd3 %>% mutate(highBulk.AD = if_else(highParent.GT == paste(ALT, ALT, se
   select(CHROM, POS, REF, ALT, 
          highBulk.AD, highBulk.DP, highBulk.GQ, highBulk.PL,
          lowBulk.AD, lowBulk.DP, lowBulk.GQ, lowBulk.PL)
-write_tsv(dd4, paste(outPrefix, "reform.txt", sep = "."))
+write_tsv(dd5, paste(outPrefix, "reform.txt", sep = "."))
 
-dd5 <- dd3 %>% mutate(HB.HP.DP = if_else(highParent.GT == paste(REF, REF, sep = "/"),
+##
+dd6 <- dd4 %>% mutate(HB.HP.DP = if_else(highParent.GT == paste(REF, REF, sep = "/"),
                                          highBulk.AD_0, highBulk.AD_1),
                       HB.LP.DP = if_else(highParent.GT == paste(REF, REF, sep = "/"),
                                          highBulk.AD_1, highBulk.AD_0),
@@ -240,8 +244,8 @@ dd5 <- dd3 %>% mutate(HB.HP.DP = if_else(highParent.GT == paste(REF, REF, sep = 
                       LB.LP.DP = if_else(highParent.GT == paste(REF, REF, sep = "/"),
                                          lowBulk.AD_1, lowBulk.AD_0)) %>%
   dplyr::select(CHROM, POS, HB.HP.DP, HB.LP.DP, LB.HP.DP, LB.LP.DP)
-##
-slidwin <- winScan(x = dd5,
+## Sliding window statistical
+slidwin <- winScan(x = dd6,
               groups = "CHROM",
               position = "POS",
               values = c("HB.HP.DP", "HB.LP.DP", "LB.HP.DP", "LB.LP.DP"),
@@ -250,58 +254,112 @@ slidwin <- winScan(x = dd5,
               funs = c("sum")) %>% as_tibble() %>% 
   mutate(HB.index = HB.HP.DP_sum / (HB.HP.DP_sum + HB.LP.DP_sum),
          LB.index = LB.HP.DP_sum / (LB.HP.DP_sum + LB.LP.DP_sum),
-         delta.index = HB.index - LB.index) %>%
-  dplyr::select(CHROM, POS = win_mid, HB.index, LB.index, delta.index, SNPn = HB.HP.DP_n)
-##
+         delta.index = HB.index - LB.index,
+         ED = sqrt((HB.index - LB.index)^2 + ((1-HB.index) - (1-LB.index))^2),
+         ED4 = ED^4) %>% 
+  dplyr::select(CHROM, win_start, win_end, win_mid, SNPn = LB.LP.DP_n, 
+                       HB.HP.DP_sum, HB.LP.DP_sum, HB.index, 
+                       LB.HP.DP_sum, LB.LP.DP_sum, LB.index, 
+                       delta.index, ED, ED4)
+outtb <- slidwin
+colnames(outtb) <- c("CHROM", "win_start", "win_end", "win_mid", "SNPn",
+                     paste(highB, highP, "depth", sep = "."),
+                     paste(highB, lowP, "depth", sep = "."),
+                     paste(highB, "index", sep = "."),
+                     paste(lowB, highB, "depth", sep = "."),
+                     paste(lowB, lowP, "depth", sep = "."),
+                     paste(lowB, "index", sep = "."),
+                     "delta.index", "ED", "ED4")
+write_tsv(x = outtb, file = paste(outPrefix, "SlidingWindow.txt", sep = "."))
+write_csv(x = outtb, file = paste(outPrefix, "SlidingWindow.csv", sep = "."))
+
+
+
+## 我们开始画图了
 slidwin <- chr %>% left_join(slidwin, by = "CHROM")
 slidwin$CHROM <- factor(slidwin$CHROM, levels = chr$CHROM)
 
+## SNP index
+# delta index
 pdf(file = paste(outPrefix, "delta_SNP_index.pdf", sep = "."), width = width, height = height)
-CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = POS, delta_index = delta.index), 
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, delta_index = delta.index), 
        type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
        ylab = "delta SNP index", ylim = c(-1, 1), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
        chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
        file.output = FALSE)
 dev.off()
 png(filename = paste(outPrefix, "delta_SNP_index.png", sep = "."), width = width, height = height, units = "in", res = 500)
-CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = POS, delta.index), 
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, delta.index), 
        type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
        ylab = "delta SNP index", ylim = c(-1, 1), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
        chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
        file.output = FALSE)
 dev.off()
 
-#
+# high bulk index
 pdf(file = paste(outPrefix, highB, "SNP_index.pdf", sep = "."), width = width, height = height)
-CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = POS, HB.index), 
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, HB.index), 
        type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
        ylab = "SNP index", ylim = c(0, 1), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
        chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
        file.output = FALSE)
 dev.off()
 png(filename = paste(outPrefix, highB, "SNP_index.png", sep = "."), width = width, height = height, units = "in", res = 500)
-CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = POS, HB.index), 
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, HB.index), 
        type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
        ylab = "SNP index", ylim = c(0, 1), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
        chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
        file.output = FALSE)
 dev.off()
 
-#
+# low bulk index
 pdf(file = paste(outPrefix, lowB, "SNP_index.pdf", sep = "."), width = width, height = height)
-CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = POS, LB.index), 
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, LB.index), 
        type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
        ylab = "SNP index", ylim = c(0, 1), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
        chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
        file.output = FALSE)
 dev.off()
 png(filename = paste(outPrefix, lowB, "SNP_index.png", sep = "."), width = width, height = height, units = "in", res = 500)
-CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = POS, LB.index), 
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, LB.index), 
        type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
        ylab = "SNP index", ylim = c(0, 1), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
        chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
        file.output = FALSE)
 dev.off()
+
+## ED and ED^4
+# ED
+pdf(file = paste(outPrefix, "ED.pdf", sep = "."), width = width, height = height)
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, ED), 
+       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
+       ylab = "ED", ylim = c(0, 1.5), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
+       file.output = FALSE)
+dev.off()
+png(filename = paste(outPrefix, "ED.png", sep = "."), width = width, height = height, units = "in", res = 500)
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, ED), 
+       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
+       ylab = "ED", ylim = c(0, 1.5), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
+       file.output = FALSE)
+dev.off()
+# ED4
+pdf(file = paste(outPrefix, "ED4.pdf", sep = "."), width = width, height = height)
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, ED4), 
+       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
+       ylab = "ED^4", ylim = c(0, 4), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
+       file.output = FALSE)
+dev.off()
+png(filename = paste(outPrefix, "ED4.png", sep = "."), width = width, height = height, units = "in", res = 500)
+CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, ED4), 
+       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
+       ylab = "ED^4", ylim = c(0, 4), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
+       file.output = FALSE)
+dev.off()
+
 
 #### 
 df <- importFromGATK(file = paste(outPrefix, "reform.txt", sep = "."),
