@@ -168,10 +168,10 @@ dd2 <- dd1 %>% separate(highBulk.AD, c("highBulk.AD_0", "highBulk.AD_1"), sep = 
   separate(lowBulk.PL, c("lowBulk.PL_00", "lowBulk.PL_01", "lowBulk.PL_11"), sep = ",", convert = TRUE)
 
 ## 
-dd3 <- dd2 %>% filter(!((highBulk.AD_0 / (highBulk.AD_0 + highBulk.AD_1) < 0.3) & 
+dd3 <- dd2 %>% filter(!(((highBulk.AD_0 / (highBulk.AD_0 + highBulk.AD_1) < 0.3) & 
                           (lowBulk.AD_0 / (lowBulk.AD_0 + lowBulk.AD_1) < 0.3)) | 
                         ((highBulk.AD_0 / (highBulk.AD_0 + highBulk.AD_1) > 0.7) & 
-                           (lowBulk.AD_0 / (lowBulk.AD_0 + lowBulk.AD_1) > 0.7)))
+                           (lowBulk.AD_0 / (lowBulk.AD_0 + lowBulk.AD_1) > 0.7))))
 ## 
 dp <- dd3 %>% dplyr::select(HP = highParent.DP, LP = lowParent.DP, HB = highBulk.DP, LB = lowBulk.DP) %>%
   gather(key = "sample", value = "depth")
@@ -333,14 +333,14 @@ dev.off()
 pdf(file = paste(outPrefix, "ED.pdf", sep = "."), width = width, height = height)
 CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, ED), 
        type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
-       ylab = "ED", ylim = c(0, 1.5), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       ylab = "ED", cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
        chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
        file.output = FALSE)
 dev.off()
 png(filename = paste(outPrefix, "ED.png", sep = "."), width = width, height = height, units = "in", res = 500)
 CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, ED), 
        type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
-       ylab = "ED", ylim = c(0, 1.5), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       ylab = "ED", cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
        chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
        file.output = FALSE)
 dev.off()
@@ -348,14 +348,14 @@ dev.off()
 pdf(file = paste(outPrefix, "ED4.pdf", sep = "."), width = width, height = height)
 CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, ED4), 
        type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
-       ylab = "ED^4", ylim = c(0, 4), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       ylab = "ED^4", cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
        chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
        file.output = FALSE)
 dev.off()
 png(filename = paste(outPrefix, "ED4.png", sep = "."), width = width, height = height, units = "in", res = 500)
 CMplot(filter(slidwin, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, ED4), 
        type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
-       ylab = "ED^4", ylim = c(0, 4), cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
+       ylab = "ED^4", cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
        chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
        file.output = FALSE)
 dev.off()
@@ -385,10 +385,13 @@ df <- runQTLseqAnalysis(
 
 # 输出QTLseqr结算结果
 outtb <- df %>% select(CHROM, POS, REF, ALT, LowBulk.LPgeno.AD = AD_REF.LOW, LowBulk.HPgeno.AD = AD_ALT.LOW, 
-              SNPindex.LOW, HighBulk.LPgeno.AD = AD_REF.HIGH, HighBulk.HPgeno.AD = AD_ALT.HIGH, SNPindex.HIGH, 
-              deltaSNP, nSNPs, tricubeDeltaSNP, CI_95, CI_99)
+                       SNPindex.LOW, HighBulk.LPgeno.AD = AD_REF.HIGH, HighBulk.HPgeno.AD = AD_ALT.HIGH, SNPindex.HIGH, 
+                       deltaSNP, nSNPs, tricubeDeltaSNP, CI_95, CI_99)
 write_tsv(outtb, paste(outPrefix, "QTLseqrdeltaSNPindex.txt", sep = "."))
 write_csv(outtb, paste(outPrefix, "QTLseqrdeltaSNPindex.csv", sep = "."))
+
+# 
+df <- df %>% filter(nSNPs > minN)
 
 #plotQTLStats(SNPset = df, var = "Gprime", plotThreshold = TRUE, q = 0.01)
 #plotQTLStats(SNPset = df, var = "deltaSNP", plotIntervals = TRUE) + theme_half_open()
