@@ -13,6 +13,7 @@ bowtie2-build ${genome} ${index}
 
 awk '{print $1"\t"$2}' ${genome}.fai > ref.len
 cp ref.len ${work_dir}/04.Analysis/
+cp chrom.txt ${work_dir}/04.Analysis/
 bedtools makewindows -w 200000 -s 100000 -g ref.len > ref.window.bed
 ####################################################
 
@@ -39,6 +40,7 @@ bowtie2 --rg-id ${sample} --rg "PL:ILLUMINA" --rg "SM:${sample}" \
 if [ $sort = sbb ];then
 	sambamba view --format=bam --with-header --sam-input --nthreads=${thread} --output-filename ${sample}.bam ${sample}.sam
 	sambamba sort --nthreads=${thread} --memory-limit=20GB --tmpdir=./ --out=${sample}.sort.bam ${sample}.bam
+	rm ${sample}.bam
 	#rm -rf sambamba-pid*
 elif [ $sort = sts ];then
 	samtools sort --threads ${thread} --output-fmt BAM -o ${sample}.sort.bam ${sample}.sam
@@ -102,11 +104,14 @@ ls *g.vcf.gz > GVCFs.list
 java -Xmx30g -jar ${gatk} \
      -R ${genome} -T CombineGVCFs \
      -V GVCFs.list \
-     -o ${filename}.gatk.g.vcf.gz
+     -o ${filename}.gatk.g.vcf.gz 、
+     &> ${filename}.CombineGVCFs.log
 
 java -Xmx30g -jar ${gatk} \
      -R ${genome} -T GenotypeGVCFs \
-     -V ${filename}.gatk.g.vcf.gz -o ${filename}.gatk.vcf.gz
+     -V ${filename}.gatk.g.vcf.gz \
+     -o ${filename}.gatk.vcf.gz \
+     &> &{filename}.GenotypeGVCFs.log
 
 java -Xmx30g -jar ${gatk} \
      -R ${genome} -T VariantFiltration \
@@ -117,7 +122,7 @@ java -Xmx30g -jar ${gatk} \
      --filterName FilterFS --filterExpression "FS>20.0" \
      --filterName FilterMQRankSum --filterExpression "MQRankSum<-3.0" \
      --filterName FilterReadPosRankSum --filterExpression "ReadPosRankSum<-3.0" \
-     2> ${filename}.flt.log
+     2> ${filename}.VariantFiltration.log
 
 #grep -vP "\tFilter" ${filename}.flt.vcf > ${filename}.filter.vcf
 # 改成bcftools
@@ -135,6 +140,9 @@ java -Xmx30g -jar ${gatk} \
      -V ${filename}.filter.vcf.gz -o ${filename}.filter.INDELs.vcf.gz
 # 保留双等位基因位点
 bcftools view -o ${filename}.biallelic.SNPs.vcf.gz -O z -m 2 -M 2 ${filename}.filter.SNPs.vcf.gz
+bcftools view -o ${filename}.biallelic.INDELs.vcf.gz -O z -m 2 -M 2 ${filename}.filter.INDELs.vcf.gz
+bcftools index -t ${filename}.biallelic.SNPs.vcf.gz
+bcftools index -t ${filename}.biallelic.INDELs.vcf.gz
 
 java -Xmx30g -jar ${gatk} \
      -R ${genome} -T VariantsToTable \
@@ -143,7 +151,7 @@ java -Xmx30g -jar ${gatk} \
 
 #grep -v "##" ${filename}.biallelic.SNPs.vcf.gz | sed 's/^#CHROM/CHROM/' > ../04.Analysis/${filename}.biallelic.SNPs.txt
 
-java -jar ${DISCVRSeq} VariantQC -O ${filename}.flt.report.html -R ${genome} -V ${filename}.flt.vcf
+java -jar ${DISCVRSeq} VariantQC -O ${filename}.flt.report.html -R ${genome} -V ${filename}.flt.vcf.gz
 
 ${work_dir}/04.Analysis
 gzip ${filename}.biallelic.SNPs.table
@@ -176,6 +184,8 @@ bedtools coverage -b $i.dd.bed -a ${work_dir}/refseq/ref.window.bed -mean | \
 	awk '{print $1"\t"$2+1"\t"$3"\t"$4}' > $i.dd.window.depth
 rm $i.dd.bed
 done
+
+Rscript CoverageDepth.R --sampleInfo ${sampleInfo} --chrInfo ../refseq/chrom.txt --chrLen ../refseq/ref.len
 
 Rscript covStat.R ${genome}.fai
 echo -e "Sample,Total read,Mapping read,Mapping rate,Unique mapping read,Unique mapping rate" > align_stat.csv

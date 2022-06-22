@@ -127,7 +127,7 @@ if (FALSE) {
 }
 
 ## 读取数据
-chr <- read_tsv("./chromColor.txt")
+chr <- read_tsv("./chrom.txt")
 len <- read_tsv(file = "./ref.len", col_names = c("CHROM", "Len"))
 
 df <- read_tsv(file = filename) %>%
@@ -430,39 +430,6 @@ plotIndex(df = outtb, chr = chr, len = len, CI = "CI_99", nSNPs = "nSNPs", n = m
 dev.off()
 
 
-#p <- df %>% filter(nSNPs > minN) %>%
-#  ggplot() +
-#  geom_line(aes(x = POS, y = CI_95), color = "gray") +
-#  geom_line(aes(x = POS, y = -CI_95), color = "gray") +
-#  geom_line(aes(x = POS, y = tricubeDeltaSNP, color = COLOR), size = 1) +
-#  ylim(-1, 1) +
-#  labs(x = NULL, y = "delta SNP index") +
-#  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
-#  scale_color_aaas() +
-#  theme_half_open() +
-#  theme(legend.position = "none") +
-#  facet_grid(. ~ LABEL, scales = "free_x", space = "free_x")
-#ggsave(filename = paste(outPrefix, "deltaSNPindex.95CI.pdf", sep = "."), width = width, height = height)
-#ggsave(filename = paste(outPrefix, "deltaSNPindex.95CI.png", sep = "."), width = width, height = height, dpi = 500)
-#
-#p <- df %>% filter(nSNPs > minN) %>%
-#  ggplot() +
-#  geom_line(aes(x = POS, y = CI_99), color = "gray") +
-#  geom_line(aes(x = POS, y = -CI_99), color = "gray") +
-#  geom_line(aes(x = POS, y = tricubeDeltaSNP, color = COLOR), size = 1) +
-#  ylim(-1, 1) +
-#  labs(x = NULL, y = "delta SNP index") +
-#  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
-#  scale_color_aaas() +
-#  theme_half_open() +
-#  theme(legend.position = "none") +
-#  facet_grid(. ~ LABEL, scales = "free_x", space = "free_x")
-#ggsave(filename = paste(outPrefix, "deltaSNPindex.99CI.pdf", sep = "."), width = width, height = height)
-#ggsave(filename = paste(outPrefix, "deltaSNPindex.99CI.png", sep = "."), width = width, height = height, dpi = 500)
-
-#export summary CSV
-#getQTLTable(SNPset = df, alpha = 0.01, export = TRUE, fileName = "Gprime_QTL.csv",method="Gprime")
-#x <- chr %>% left_join(df, by = "CHROM") %>% select(-CHROM, -COLOR) %>% rename(CHROM = LABEL)
 getQTLTable(SNPset = df, interval =95, export = TRUE, fileName = paste(outPrefix, "95CI.csv", sep = "."), method="QTLseq")
 getQTLTable(SNPset = df, interval =99, export = TRUE, fileName = paste(outPrefix, "99CI.csv", sep = "."), method="QTLseq")
 

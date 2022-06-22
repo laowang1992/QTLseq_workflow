@@ -99,7 +99,7 @@ if (FALSE) {
 }
 
 ## 读取数据
-chr <- read_tsv("./chromColor.txt")
+chr <- read_tsv("./chrom.txt")
 len <- read_tsv(file = "./ref.len", col_names = c("CHROM", "Len"))
 
 df <- read_tsv(file = filename) %>%
