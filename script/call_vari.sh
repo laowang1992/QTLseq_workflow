@@ -1,5 +1,5 @@
 ####################################################
-# 数据准备
+## 数据准备
 ## 建基因组索引
 cd ${work_dir}/refseq
 # annovar建库
@@ -17,7 +17,8 @@ cp chrom.txt ${work_dir}/04.Analysis/
 bedtools makewindows -w 200000 -s 100000 -g ref.len > ref.window.bed
 ####################################################
 
-
+####################################################
+## call variation
 cat ${sampleInfo} | while read sample group fq1 fq2
 do
 # 质控 过滤
@@ -46,7 +47,6 @@ elif [ $sort = sts ];then
 	samtools sort --threads ${thread} --output-fmt BAM -o ${sample}.sort.bam ${sample}.sam
 fi
 rm ${sample}.sam
-
 done
 
 cd ${work_dir}/01.Mapping
@@ -70,17 +70,7 @@ elif [ $rmdup = sbb ];then
 fi
 rm *sort.bam *sort.bam.bai
 
-awk '{print $1}' ${sampleInfo} | \
-        parallel -j ${thread} -I% --max-args 1 \
-        genomeCoverageBed -ibam %.dd.bam -bga -g ${genome} "|" \
-        grep -w "0$" ">" %.0cov.bedgraph
-
-awk '{print $1}' ${sampleInfo} | \
-	parallel -j ${thread} -I% --max-args 1 \
-	bedtools bamtobed -i %.dd.bam ">" %.dd.bed
-
 cd ${work_dir}/02.SNP_indel
-
 # GATK HaplotypeCaller多线程
 for sample in $(awk '{print $1}' ${sampleInfo})
 do
@@ -90,13 +80,6 @@ do
 		-I ../01.Mapping/${sample}.dd.bam -o ${sample}.gatk.g.vcf.gz \
 		&> ${sample}.HaplotypeCaller.log
 done
-#awk '{print $1}' ${sampleInfo} | \
-#        parallel -j ${thread} -I% --max-args 1 \
-#        java -Xmx20g -jar ${gatk} \
-#        -R ${genome} \
-#        -T HaplotypeCaller -ERC GVCF \
-#        -I ../01.Mapping/%.dd.bam -o %.gatk.g.vcf.gz \
-#        "&>" %.HaplotypeCaller.log
 
 ls *g.vcf.gz > GVCFs.list
 #cut -f1 ../00.data/samples.txt | sed 's/$/.gatk.g.vcf.gz/' > GVCFs.list
@@ -104,90 +87,107 @@ ls *g.vcf.gz > GVCFs.list
 java -Xmx30g -jar ${gatk} \
      -R ${genome} -T CombineGVCFs \
      -V GVCFs.list \
-     -o ${filename}.gatk.g.vcf.gz 、
+     -o ${filename}.gatk.g.vcf.gz \
      &> ${filename}.CombineGVCFs.log
 
 java -Xmx30g -jar ${gatk} \
      -R ${genome} -T GenotypeGVCFs \
      -V ${filename}.gatk.g.vcf.gz \
      -o ${filename}.gatk.vcf.gz \
-     &> &{filename}.GenotypeGVCFs.log
+     &> ${filename}.GenotypeGVCFs.log
 
+# filter
+#java -Xmx30g -jar ${gatk} \
+#     -R ${genome} -T VariantFiltration \
+#     -o ${filename}.flt.vcf.gz -V ${filename}.gatk.vcf.gz \
+#     --filterName FilterQual --filterExpression "QUAL<30.0" \
+#     --filterName FilterQD --filterExpression "QD<13.0" \
+#     --filterName FilterMQ --filterExpression "MQ<20.0" \
+#     --filterName FilterFS --filterExpression "FS>20.0" \
+#     --filterName FilterMQRankSum --filterExpression "MQRankSum<-3.0" \
+#     --filterName FilterReadPosRankSum --filterExpression "ReadPosRankSum<-3.0" \
+#     &> ${filename}.VariantFiltration.log
+
+# 20220813，修改过滤参数，以前的有点太严格，在202208_BnQTLseq项目中根据VariantQC结果，FS、MQRankSum和QD会过滤掉一半位点
 java -Xmx30g -jar ${gatk} \
      -R ${genome} -T VariantFiltration \
      -o ${filename}.flt.vcf.gz -V ${filename}.gatk.vcf.gz \
      --filterName FilterQual --filterExpression "QUAL<30.0" \
-     --filterName FilterQD --filterExpression "QD<13.0" \
+     --filterName FilterQD --filterExpression "QD<2.0" \
      --filterName FilterMQ --filterExpression "MQ<20.0" \
-     --filterName FilterFS --filterExpression "FS>20.0" \
-     --filterName FilterMQRankSum --filterExpression "MQRankSum<-3.0" \
+     --filterName FilterFS --filterExpression "FS>60.0" \
+     --filterName FilterMQRankSum --filterExpression "MQRankSum<-12.5" \
      --filterName FilterReadPosRankSum --filterExpression "ReadPosRankSum<-3.0" \
-     2> ${filename}.VariantFiltration.log
+     &> ${filename}.VariantFiltration.log
 
 #grep -vP "\tFilter" ${filename}.flt.vcf > ${filename}.filter.vcf
-# 改成bcftools
-bcftools view -f PASS -o ${filename}.filter.vcf.gz -O z ${filename}.flt.vcf.gz
-bcftools index -t ${filename}.filter.vcf.gz 
-
-java -Xmx30g -jar ${gatk} \
-     -R ${genome} -T SelectVariants \
-     -selectType SNP \
-     -V ${filename}.filter.vcf.gz -o ${filename}.filter.SNPs.vcf.gz
-
-java -Xmx30g -jar ${gatk} \
-     -R ${genome} -T SelectVariants \
-     -selectType INDEL \
-     -V ${filename}.filter.vcf.gz -o ${filename}.filter.INDELs.vcf.gz
-# 保留双等位基因位点
-bcftools view -o ${filename}.biallelic.SNPs.vcf.gz -O z -m 2 -M 2 ${filename}.filter.SNPs.vcf.gz
-bcftools view -o ${filename}.biallelic.INDELs.vcf.gz -O z -m 2 -M 2 ${filename}.filter.INDELs.vcf.gz
-bcftools index -t ${filename}.biallelic.SNPs.vcf.gz
-bcftools index -t ${filename}.biallelic.INDELs.vcf.gz
+# 改成bcftools，保留bi-allele
+bcftools view -f PASS -o ${filename}.filter.SNPs.vcf.gz -O z -m 2 -M 2 -v snps --threads ${thread} ${filename}.flt.vcf.gz
+bcftools view -f PASS -o ${filename}.filter.INDELs.vcf.gz -O z -m 2 -M 2 -v indels --threads ${thread} ${filename}.flt.vcf.gz
+bcftools index -t ${filename}.filter.SNPs.vcf.gz
+bcftools index -t ${filename}.filter.INDELs.vcf.gz
 
 java -Xmx30g -jar ${gatk} \
      -R ${genome} -T VariantsToTable \
      -F CHROM -F POS -F REF -F ALT -GF GT -GF AD -GF DP -GF GQ -GF PL \
-     -V ${filename}.biallelic.SNPs.vcf.gz -o ../04.Analysis/${filename}.biallelic.SNPs.table
+     -V ${filename}.filter.SNPs.vcf.gz -o ../04.Analysis/${filename}.filter.SNPs.table
+#grep -v "##" ${filename}.filter.SNPs.vcf.gz | sed 's/^#CHROM/CHROM/' > ../04.Analysis/${filename}.filter.SNPs.txt
 
-#grep -v "##" ${filename}.biallelic.SNPs.vcf.gz | sed 's/^#CHROM/CHROM/' > ../04.Analysis/${filename}.biallelic.SNPs.txt
+cd ${work_dir}/04.Analysis
+gzip ${filename}.filter.SNPs.table
+#gzip ${filename}.filter.SNPs.txt
+####################################################
 
-java -jar ${DISCVRSeq} VariantQC -O ${filename}.flt.report.html -R ${genome} -V ${filename}.flt.vcf.gz
-
-${work_dir}/04.Analysis
-gzip ${filename}.biallelic.SNPs.table
-#gzip ${filename}.biallelic.SNPs.txt
-
-# annotation
+####################################################
+## annotation
 cd ${work_dir}/03.Annotation
 convert2annovar.pl --format vcf4old ../02.SNP_indel/${filename}.filter.SNPs.vcf.gz --outfile ./${filename}.filter.SNPs.annovar.input
 convert2annovar.pl --format vcf4old ../02.SNP_indel/${filename}.filter.INDELs.vcf.gz --outfile ./${filename}.filter.INDELs.annovar.input
 annotate_variation.pl --geneanno --neargene 2000 -buildver genome --dbtype refGene --outfile ./${filename}.filter.SNPs.anno --exonsort ./${filename}.filter.SNPs.annovar.input ../refseq
 annotate_variation.pl --geneanno --neargene 2000 -buildver genome --dbtype refGene --outfile ./${filename}.filter.INDELs.anno --exonsort ./${filename}.filter.INDELs.annovar.input ../refseq
+####################################################
 
-Rscript AnnoStat.R --snpvar ${filename}.filter.SNPs.anno.variant_function \
-	--indelvar ${filename}.filter.INDELs.anno.variant_function \
-	--snpex ${filename}.filter.SNPs.anno.exonic_variant_function \
-	--indelex ${filename}.filter.INDELs.anno.exonic_variant_function
-
-# 
+####################################################
+##  Statistics
+# fastQC
 cd ${work_dir}/00.data/00.raw_data
 fastqc -o ./QC --nogroup --threads ${thread} *[fastq\|fq].gz
 cd ${work_dir}/00.data/01.clean_data
 fastqc -o ./QC --nogroup --threads ${thread} *clean.fastq.gz
+# data stat
 Rscript dataStat.R
 
 cd ${work_dir}/01.Mapping
+# coverage rate
+awk '{print $1}' ${sampleInfo} | \
+        parallel -j ${thread} -I% --max-args 1 \
+        genomeCoverageBed -ibam %.dd.bam -bga -g ${genome} "|" \
+        grep -w "0$" ">" %.0cov.bedgraph
+Rscript covStat.R ${genome}.fai
 
+# depth
+awk '{print $1}' ${sampleInfo} | \
+	parallel -j ${thread} -I% --max-args 1 \
+	bedtools bamtobed -i %.dd.bam ">" %.dd.bed
 for i in $(cut -f1 ${sampleInfo})
 do
 bedtools coverage -b $i.dd.bed -a ${work_dir}/refseq/ref.window.bed -mean | \
 	awk '{print $1"\t"$2+1"\t"$3"\t"$4}' > $i.dd.window.depth
 rm $i.dd.bed
 done
-
 Rscript CoverageDepth.R --sampleInfo ${sampleInfo} --chrInfo ../refseq/chrom.txt --chrLen ../refseq/ref.len
 
-Rscript covStat.R ${genome}.fai
+# align rate
 echo -e "Sample,Total read,Mapping read,Mapping rate,Unique mapping read,Unique mapping rate" > align_stat.csv
 for i in $(cut -f1 ${sampleInfo}); do perl alignStat.pl $i; done >> align_stat.csv
 
+cd ${work_dir}/02.SNP_indel
+# VariantQC
+java -jar ${DISCVRSeq} VariantQC -O ${filename}.flt.report.html -R ${genome} -V ${filename}.flt.vcf.gz --maxContigs 19 --threads ${thread}
+
+cd ${work_dir}/03.Annotation
+# 
+Rscript AnnoStat.R --snpvar ${filename}.filter.SNPs.anno.variant_function \
+	--indelvar ${filename}.filter.INDELs.anno.variant_function \
+	--snpex ${filename}.filter.SNPs.anno.exonic_variant_function \
+	--indelex ${filename}.filter.INDELs.anno.exonic_variant_function

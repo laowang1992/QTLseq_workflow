@@ -11,4 +11,4 @@ end=
 
 python -m jcvi.formats.gff bed --type=gene --key=ID ${gff} -o ${bed}
 
-Rscript extr_func_ann.R $bed $ann $chr $start $end
+Rscript extr_func_ann.R --bed $bed --ann $ann --chr $chr --start $start --end $end

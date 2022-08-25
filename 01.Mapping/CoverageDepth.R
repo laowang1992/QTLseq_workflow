@@ -27,18 +27,18 @@ if (test) {
   chrLen <- "./ref.len"
 }
 
-sample <- read_tsv(file = sampleInfo, col_names = F) %>% pull(X1)
-chr <- read_tsv(file = chrInfo)
+sample <- read_tsv(file = sampleInfo, col_names = F, show_col_types = FALSE) %>% pull(X1)
+chr <- read_tsv(file = chrInfo, show_col_types = FALSE)
 
-chromInfo <- read_tsv(file = chrLen, col_names = F) %>% 
+chromInfo <- read_tsv(file = chrLen, col_names = F, show_col_types = FALSE) %>% 
   select(CHROM = X1, LEN = X2) %>% 
   right_join(chr, by = "CHROM") %>% 
   mutate(start = 0) %>% 
   select(chr = LABEL, start, end = LEN)
 
 mid <- 0
-for (i in 1:length(sample)) {
-  depth <- read_tsv(file = paste(sample[i], "dd.window.depth", sep = "."), col_names = F)
+for (i in seq_along(sample)) {
+  depth <- read_tsv(file = paste(sample[i], "dd.window.depth", sep = "."), col_names = F, show_col_types = FALSE)
   if (mid < median(depth$X4)) {
     mid <- median(depth$X4)
   }
@@ -67,7 +67,27 @@ if (n <= 6 & n > 0) {
   pt.cex = 1.1
   cex = 0.6
 } else if (n > 10){
-  stop("Too many samples, no enough space.")
+  for(i in seq_along(sample)){
+    cat(date(), ", read and plot ", sample[i], " ...\n", sep = "")
+    depth <- read_tsv(file = paste(sample[i], "dd.window.depth", sep = "."), col_names = F, show_col_types = FALSE) %>%
+      rename(CHROM = X1, start = X2, end = X3, value = X4) %>%
+      right_join(chr, by = "CHROM") %>% select(chr = LABEL, start, end, value) %>%
+      mutate(pos = (start+end)/2)
+    p <- ggplot(depth, aes(x = pos, y = value, fill = chr)) +
+      geom_area() +
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(limits = c(0, 2.5*mid), n.breaks = 2) +
+      scale_fill_manual(values = getPalette(nrow(chromInfo))) +
+      labs(x = NULL, y = "Depth") +
+      facet_grid(chr ~ .) +
+      theme_half_open() +
+      theme(strip.text.y = element_text(angle = 0),
+            strip.background = element_rect(color = NA, fill = NA),
+            legend.position = "NULL")
+    ggsave(p, filename = paste(sample[i], "CoverageDepth.pdf", sep = "."), width = 8, height = dim(chr)[[1]] * 0.45 + 0.5)
+    ggsave(p, filename = paste(sample[i], "CoverageDepth.png", sep = "."), width = 8, height = dim(chr)[[1]] * 0.45 + 0.5, dpi = 500)
+  }
+  stop("Too many samples, draw depth respectively.")
 }
 
 png(filename = "CoverageDepth.png", width = width, height = height, units = "in", res = 500)
@@ -77,9 +97,9 @@ circos.par("start.degree" = 90, track.height = track.height, track.margin = c(0,
 cat(date(), ", initialization ...\n", sep = "")
 circos.genomicInitialize(chromInfo, plotType = c("axis", "labels"))
 
-for (i in 1:length(sample)) {
+for (i in seq_along(sample)) {
   cat(date(), ", read and plot ", sample[i], " ...\n", sep = "")
-  depth <- read_tsv(file = paste(sample[i], "dd.window.depth", sep = "."), col_names = F) %>%
+  depth <- read_tsv(file = paste(sample[i], "dd.window.depth", sep = "."), col_names = F, show_col_types = FALSE) %>%
     rename(CHROM = X1, start = X2, end = X3, value = X4) %>%
     right_join(chr, by = "CHROM") %>% select(chr = LABEL, start, end, value) %>%
     mutate(value = if_else(value > 2.5*mid, 2.5*mid, value))
@@ -101,9 +121,9 @@ circos.par("start.degree" = 90, track.height = track.height, track.margin = c(0,
 cat(date(), ", initialization ...\n", sep = "")
 circos.genomicInitialize(chromInfo, plotType = c("axis", "labels"))
 
-for (i in 1:length(sample)) {
+for (i in seq_along(sample)) {
   cat(date(), ", read and plot ", sample[i], " ...\n", sep = "")
-  depth <- read_tsv(file = paste(sample[i], "dd.window.depth", sep = "."), col_names = F) %>%
+  depth <- read_tsv(file = paste(sample[i], "dd.window.depth", sep = "."), col_names = F, show_col_types = FALSE) %>%
     rename(CHROM = X1, start = X2, end = X3, value = X4) %>%
     right_join(chr, by = "CHROM") %>% select(chr = LABEL, start, end, value) %>%
     mutate(value = if_else(value > 2.5*mid, 2.5*mid, value))

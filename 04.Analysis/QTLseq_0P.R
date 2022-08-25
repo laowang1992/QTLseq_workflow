@@ -13,15 +13,15 @@ p <- add_argument(p, "--out", help = "A prefix for output file", type = "charact
 p <- add_argument(p, "--highB", help = "The bulk name with high phenotype", type = "character")
 p <- add_argument(p, "--lowB", help = "The bulk name with low phenotype", type = "character")
 #
-p <- add_argument(p, "--minQ", help = "Minimum QUAL for variation", type = "numeric", default = 100)
+p <- add_argument(p, "--minQ", help = "Minimum QUAL for variation", type = "numeric", default = 30)
 #
 #p <- add_argument(p, "--bulkSizeH", help = "Bulk size with high phenotype", type = "numeric")
 #p <- add_argument(p, "--bulkSizeL", help = "Bulk size with low phenotype", type = "numeric")
 #
-p <- add_argument(p, "--minHBdp", help = "Minimum depth for high bulk", type = "numeric", default = 10)
-p <- add_argument(p, "--maxHBdp", help = "Maxmum depth for high bulk", type = "numeric", default = 10000)
-p <- add_argument(p, "--minLBdp", help = "Minimum depth for low bulk", type = "numeric", default = 10)
-p <- add_argument(p, "--maxLBdp", help = "Maxmum depth for low bulk", type = "numeric", default = 10000)
+p <- add_argument(p, "--minHBdp", help = "Minimum depth for high bulk", type = "numeric", default = 6)
+p <- add_argument(p, "--maxHBdp", help = "Maxmum depth for high bulk", type = "numeric", default = 150)
+p <- add_argument(p, "--minLBdp", help = "Minimum depth for low bulk", type = "numeric", default = 6)
+p <- add_argument(p, "--maxLBdp", help = "Maxmum depth for low bulk", type = "numeric", default = 150)
 #
 p <- add_argument(p, "--winSize", help = "Window size for sliding window statistics", type = "numeric", default = 1000000)
 p <- add_argument(p, "--winStep", help = "Window step for sliding window statistics", type = "numeric", default = 200000)
@@ -44,10 +44,10 @@ if (argv$list) {
 write.table(argv, paste(argv$out, "QTLseqrparameter.txt", sep = "."), quote = F, sep = "\t", row.names = F)
 
 library(tidyverse)
-library(QTLseqr)
+#library(QTLseqr)
 library(windowscanr)
 library(cowplot)
-library(CMplot)
+#library(CMplot)
 library(ggsci)
 library(RColorBrewer)
 
@@ -73,7 +73,7 @@ if (FALSE) {
   filename <- "./purpleLeaf.filter.SNPs.table.gz"
   outPrefix <- "purpleLeaf"
   ## filter SNP Quality
-  minQ <- 50
+  minQ <- 30
   ##
   #bulkSizeH <- 30
   #bulkSizeL <- 30
@@ -83,13 +83,13 @@ if (FALSE) {
   ##
   ## filter depth parameter
   minHBdp <- 6
-  maxHBdp <- 1000
+  maxHBdp <- 150
   
   minLBdp <- 6
-  maxLBdp <- 1000
+  maxLBdp <- 150
   
   ## sliding window parameter
-  winSize <- 1000000
+  winSize <- 2000000
   winStep <- 200000
   #
   minN <- 10
@@ -101,6 +101,7 @@ if (FALSE) {
 ## 读取数据
 chr <- read_tsv("./chrom.txt")
 len <- read_tsv(file = "./ref.len", col_names = c("CHROM", "Len"))
+source("./Support_functions.R")
 
 df <- read_tsv(file = filename) %>%
   select(CHROM, POS, REF, ALT, 
@@ -118,6 +119,8 @@ df <- read_tsv(file = filename) %>%
                        lowBulk.PL = paste(lowB, "PL", sep = "."))
 
 ## 其实直接过滤两个混池的SNP index<0.3或>0.7的也行，只不过现在先过滤一部分有助于后面的运算速度提升
+# 这里有潜在的危险，highBulk.AD_0 + highBulk.AD_1有时候小于highBulk.DP，这里过滤highBulk.DP后，
+# 后面highBulk.AD_0 + highBulk.AD_1依然有潜在等于0的可能，导致后面做分母求index是报错（可能性很小，暂时不管了）
 dd1 <- df %>% filter(!((highBulk.GT == paste(REF, REF, sep = "/") & lowBulk.GT == paste(REF, REF, sep = "/")) | 
                         (highBulk.GT == paste(ALT, ALT, sep = "/") & lowBulk.GT == paste(ALT, ALT, sep = "/")))) %>%
   filter(highBulk.DP > minHBdp, highBulk.DP < maxHBdp, lowBulk.DP > minLBdp, lowBulk.DP < maxLBdp)
@@ -127,8 +130,7 @@ dd2 <- dd1 %>% separate(highBulk.AD, c("highBulk.AD_0", "highBulk.AD_1"), sep = 
          highBulk.alt.index = highBulk.AD_1 / (highBulk.AD_0 + highBulk.AD_1),
          lowBulk.ref.index = lowBulk.AD_0 / (lowBulk.AD_0 + lowBulk.AD_1),
          lowBulk.alt.index = lowBulk.AD_1 / (lowBulk.AD_0 + lowBulk.AD_1),
-         ED = sqrt((highBulk.ref.index - lowBulk.ref.index)^2 + (highBulk.alt.index - lowBulk.alt.index)^2),
-         ED4 = ED^4)
+         ED = sqrt((highBulk.ref.index - lowBulk.ref.index)^2 + (highBulk.alt.index - lowBulk.alt.index)^2))
 dd3 <- dd2 %>% filter(!((highBulk.ref.index < 0.3 & lowBulk.ref.index < 0.3) |
                           (highBulk.ref.index > 0.7 & lowBulk.ref.index > 0.7)))
 ## 
@@ -156,63 +158,79 @@ colourCount = dim(chr)[[1]]
 getPalette = colorRampPalette(brewer.pal(8, "Set1"))
 #df$LABEL <- factor(df$LABEL, levels = chromColor$LABEL)
 chr$LABEL <- factor(chr$LABEL, levels = chr$LABEL)
-Phist <- chr %>% left_join(dd3, by = "CHROM") %>% ggplot(aes(x = POS)) +
+Phist <- chr %>% left_join(dd4, by = "CHROM") %>% ggplot(aes(x = POS)) +
   geom_histogram(aes(fill = LABEL), color = NA, binwidth = 1000000) +
   labs(x = NULL, y = "SNP Count / 1Mb", fill = "Chrom") +
   scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(n.breaks = 2.1) +
   scale_fill_manual(values = getPalette(colourCount)) +
   theme_half_open() +
-  theme(strip.text = element_text(color = NA, size = 0.1),
-        strip.background = element_rect(color = NA, fill = NA)) +
+  theme(strip.text.y = element_text(angle = 0),
+        strip.background = element_rect(color = NA, fill = NA),
+        legend.position = "NULL") +
   facet_grid(LABEL ~ .)
-ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.pdf", sep = "."), width = 9, height = dim(chr)[[1]] * 0.6 + 0.5)
-ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.png", sep = "."), width = 9, height = dim(chr)[[1]] * 0.6 + 0.5, dpi = 500)
+ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.pdf", sep = "."), width = 8, height = dim(chr)[[1]] * 0.45 + 0.5)
+ggsave(Phist, filename = paste(outPrefix, "SNP_distribution_histogram.png", sep = "."), width = 8, height = dim(chr)[[1]] * 0.45 + 0.5, dpi = 500)
 remove(Phist)
 
 ##
-winslid <- winScan(x = dd3,
+slidwin <- winScan(x = dd3,
                    groups = "CHROM",
                    position = "POS",
-                   values = c("ED", "ED4"),
+                   values = c("ED"),
                    win_size = winSize,
                    win_step = winStep,
-                   funs = c("mean"))
-df <- winslid %>% right_join(chr, by = "CHROM") %>%
-  select(CHROM, LABEL, win_start, win_end, win_mid, ED = ED_mean, ED4 = ED4_mean, SNPn = ED_n) %>%
-  as_tibble()
+                   funs = c("mean")) %>%
+  dplyr::select(CHROM, win_start, win_end, win_mid, nSNPs = ED_n, ED = ED_mean) %>%
+  dplyr::mutate(ED4 = ED^4)
+write_tsv(x = slidwin, file = paste(outPrefix, "SlidingWindow.txt", sep = "."))
+write_csv(x = slidwin, file = paste(outPrefix, "SlidingWindow.csv", sep = "."))
 
-write_tsv(x = df, file = paste(outPrefix, "SlidingWindow.txt", sep = "."))
-write_csv(x = df, file = paste(outPrefix, "SlidingWindow.csv", sep = "."))
-
-pdf(file = paste(outPrefix, "ED.pdf", sep = "."), width = width, height = height)
-CMplot(filter(df, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, ED = ED), 
-       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
-       ylab = "ED", cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
-       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
-       file.output = FALSE)
+slidwin$POS <- slidwin$win_mid
+## ED
+pdf(file = paste(outPrefix, "ED.point.pdf", sep = "."), width = width, height = height)
+plotIndex(df = slidwin, chr = chr, len = len, nSNPs = "nSNPs", n = minN, 
+          index = "ED", band = 0.005, ylim = c(0, max(slidwin$ED, na.rm = TRUE)),
+          ylab = "ED", size = 1, axis.size = 1, 
+          axis.lab.size = 1, axis.title.size = 1.5, type = "p")
 dev.off()
-png(filename = paste(outPrefix, "ED.png", sep = "."), width = width, height = height, units = "in", res = 500)
-CMplot(filter(df, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, ED = ED), 
-       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
-       ylab = "ED", cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
-       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
-       file.output = FALSE)
+png(filename = paste(outPrefix, "ED.point.png", sep = "."), width = width, height = height, units = "in", res = 500)
+plotIndex(df = slidwin, chr = chr, len = len, nSNPs = "nSNPs", n = minN, 
+          index = "ED", band = 0.005, ylim = c(0, max(slidwin$ED, na.rm = TRUE)),
+          ylab = "ED", size = 1, axis.size = 1, 
+          axis.lab.size = 1, axis.title.size = 1.5, type = "p")
 dev.off()
-
-
-pdf(file = paste(outPrefix, "ED4.pdf", sep = "."), width = width, height = height)
-CMplot(filter(df, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, ED4 = ED4), 
-       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
-       ylab = "ED^4", cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
-       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
-       file.output = FALSE)
+## ED^4
+pdf(file = paste(outPrefix, "ED4.point.pdf", sep = "."), width = width, height = height)
+plotIndex(df = slidwin, chr = chr, len = len, nSNPs = "nSNPs", n = minN, 
+          index = "ED4", band = 0.005, ylim = c(0, max(slidwin$ED4, na.rm = TRUE)),
+          ylab = "ED^4", size = 1, axis.size = 1, 
+          axis.lab.size = 1, axis.title.size = 1.5, type = "p")
 dev.off()
-png(filename = paste(outPrefix, "ED4.png", sep = "."), width = width, height = height, units = "in", res = 500)
-CMplot(filter(df, SNPn > minN) %>% select(SNP = CHROM, Chromosome = CHROM, Postion = win_mid, ED4 = ED4), 
-       type = "p", plot.type = c("m"), band = 0.5, LOG10 = FALSE, chr.labels = chr$LABEL,
-       ylab = "ED^4", cex = 0.5, signal.cex = 0.8, chr.labels.angle = 45,
-       chr.den.col = NULL, ylab.pos = 2.7, amplify = FALSE,
-       file.output = FALSE)
+## ED
+pdf(file = paste(outPrefix, "ED.line.pdf", sep = "."), width = width, height = height)
+plotIndex(df = slidwin, chr = chr, len = len, nSNPs = "nSNPs", n = minN, 
+          index = "ED", band = 0.005, ylim = c(0, max(slidwin$ED, na.rm = TRUE)),
+          ylab = "ED", size = 1.5, axis.size = 1, 
+          axis.lab.size = 1, axis.title.size = 1.5, type = "l")
 dev.off()
-
+png(filename = paste(outPrefix, "ED.line.png", sep = "."), width = width, height = height, units = "in", res = 500)
+plotIndex(df = slidwin, chr = chr, len = len, nSNPs = "nSNPs", n = minN, 
+          index = "ED", band = 0.005, ylim = c(0, max(slidwin$ED, na.rm = TRUE)),
+          ylab = "ED", size = 1.5, axis.size = 1, 
+          axis.lab.size = 1, axis.title.size = 1.5, type = "l")
+dev.off()
+## ED^4
+pdf(file = paste(outPrefix, "ED4.line.pdf", sep = "."), width = width, height = height)
+plotIndex(df = slidwin, chr = chr, len = len, nSNPs = "nSNPs", n = minN, 
+          index = "ED4", band = 0.005, ylim = c(0, max(slidwin$ED4, na.rm = TRUE)),
+          ylab = "ED^4", size = 1.5, axis.size = 1, 
+          axis.lab.size = 1, axis.title.size = 1.5, type = "l")
+dev.off()
+png(filename = paste(outPrefix, "ED4.line.png", sep = "."), width = width, height = height, units = "in", res = 500)
+plotIndex(df = slidwin, chr = chr, len = len, nSNPs = "nSNPs", n = minN, 
+          index = "ED4", band = 0.005, ylim = c(0, max(slidwin$ED4, na.rm = TRUE)),
+          ylab = "ED^4", size = 1.5, axis.size = 1, 
+          axis.lab.size = 1, axis.title.size = 1.5, type = "l")
+dev.off()
 

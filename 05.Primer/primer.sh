@@ -8,7 +8,7 @@ seqkit seq -u ${genome} > genome.fa
 famap -t N -b genome.famap genome.fa
 fahash -b genome.hash -w 12 -f 3 genome.famap
 
-bcftools annotate -I '%CHROM\_%POS' -x INFO,^FORMAT/GT ../02.SNP_indel/${filename}.filter.INDELs.vcf | \
+bcftools annotate -I '%CHROM\_%POS' -x INFO,^FORMAT/GT ../02.SNP_indel/${filename}.filter.INDELs.vcf.gz | \
 	grep -v "##" | \
 	sed 's/^#CHROM/CHROM/' > ${filename}.indels.txt
 

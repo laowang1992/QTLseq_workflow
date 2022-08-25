@@ -1,0 +1,150 @@
+---
+title: "两个油菜QTLseq分析"
+author: "王鹏飞 <wangpf0608@126.com>"
+date: "`r Sys.time()`"
+output: 
+  html_document:
+    theme: paper
+    toc: True
+    number_sections: True
+    toc_float:
+      collapsed: true
+---
+
+```{R echo=FALSE}
+prefix <- "BSA"
+populations <- c("133", "135")
+
+ref_cite <- "Song, J. M., Guan, Z., Hu, J., Guo, C., Yang, Z., Wang, S., Liu, D., Wang, B., Lu, S., Zhou, R., Xie, W. Z., Cheng, Y., Zhang, Y., Liu, K., Yang, Q. Y., Chen, L. L., & Guo, L. (2020). Eight high-quality genomes reveal pan-genome architecture and ecotype differentiation of Brassica napus. Nature plants, 6(1), 34–45. https://doi.org/10.1038/s41477-019-0577-7"
+
+sampleInfo <- read.csv(file = "./result/00.data/sampleInfo.csv", colClasses = "character")
+data_stat <- read.csv(file = "./result/00.data/data_stat.csv")
+align_stat <- read.csv(file = "./result/01.Mapping/align_stat.csv")
+cov_stat <- read.csv(file = "./result/01.Mapping/cov_stat.csv")
+
+SNP_distribution <- read.csv(file = paste("./result/03.Annotation/", prefix, ".filter.SNPs.distribution.csv", sep = ""))
+SNP_exonic_variant_function <- read.csv(file = paste("./result/03.Annotation/", prefix, ".filter.SNPs.anno.exonic_variant_function.csv", sep = ""))
+INDEL_distribution <- read.csv(file = paste("./result/03.Annotation/", prefix, ".filter.INDELs.distribution.csv", sep = ""))
+INDEL_exonic_variant_function <- read.csv(file = paste("./result/03.Annotation/", prefix, ".filter.INDELs.anno.exonic_variant_function.csv", sep = ""))
+```
+
+# QTL-seq原理
+QTL-seq<sup>[1](#ref)</sup>是一种将Bulked‐segregant analysis (BSA)<sup>[2](#ref),[3](#ref)</sup>和高通量测序相结合，快速定位QTL的方法。目标性状有差异的双亲构建的分离群体中分别选取极端表型个体进行等量混合构建两个极端表型bulked DNA pool并进行测序。随后进行变异分析筛选出双亲间SNP位点并分别计算两个bulked DNA pool中每个SNP位点上某一亲本基因型read覆盖深度占该位点总read深度的比值，即SNP index，通过两个bulked DNA pool的SNP index相减即得到ΔSNP index。在基因组所有区域中，目标基因及其连锁的区域由于根据表型受到相反的选择在两个bulked DNA pool中表现出不同的趋势，因此ΔSNP index会显著偏离0附近；另一方面，于目标形状无关的区域则两个bulked DNA pool则表现为相似的变化趋势，因此ΔSNP index会在0附近波动（图1）。
+
+
+![图1 QTL-seq原理示意图](./image/QTLseq原理.png)
+
+# QTL-seq流程图
+![图2 QTL-seq流程图](./image/QTLseq流程.png)
+
+# QTL-seq分析流程
+## 取样、提取DNA、建库和测序
+选取分离群体中极端表型个体各30-50株以及双亲取幼嫩组织，分别提取DNA并将分离群体极端表型个体按照等量原则混合构建bulked DNA pools，然后进行建库和高通量测序 (混池DNA深度一般与单株个数相同) (具体流程应参考实验设计以及公司测序报告)。
+
+## 数据过滤
+使用fastp<sup>[4](#ref)</sup> (version: 0.20.0) 对raw data进行过滤得到clean data。统计过滤前后total bases、total reads、Q30、Q20、GC content以及有效数据比率 (data_stat.csv/txt)，同时使用FastQC (version: 0.11.9) 对过滤前后的数据进行质量评估 (00.data/00.raw_data/QC/sample_fastqc.html 00.data/01.clean_data/QC/sample_fastqc.html)。
+
+## 比对到参考基因组
+使用Bowtie2<sup>[5](#ref)</sup> (version: 2.4.1) 软件将clean read比对到甘蓝型油菜ZS11参考基因组<sup>[6](#ref)</sup>，得到SAM (Sequence Alignment/Map) 格式文件并对比对结果进行统计 (01.Mapping/align_stat.csv)，随后使用sambamba<sup>[7](#ref)</sup> (version: 0.8.2) 软件对比对结果 (SAM文件) 转换为BAM (Binary Alignment/Map) 格式文件<sup>[8](#ref)</sup>，并按照染色体和位置排序、去除建库过程中产生的PCR重复，然后统计样本基因组覆盖率 (01.Mapping/cov_stat.txt)。
+
+## 变异分析
+变异分析使用Genome Analysis Toolkit，GATK<sup>[9](#ref)</sup> (version: 3.8-0-ge9d806836) 完成，首先使用GATK的HaplotypeCaller功能对样本单独分析再使用CombineGVCFs功能合并，随后使用GenotypeGVCFs功能得到SNP和INDEL信息，最后使用VariantFiltration功能过滤原始的变异位点的到可靠的变异信息。
+
+## QTL-seq分析
+进一步筛选亲本和混池数据覆盖深度不小于6且亲本内纯合、亲本间不同的SNP位点进行QTL-seq分析。首先计算两个混池中突变表型亲本类型reads的覆盖深度占总覆盖深度的比例，即SNP index，同时删除两个混池中SNP index同时小于0.3或大于0.7的SNP，然后突变表型混池的SNP index减去野生型表型混池的SNP index得到delta SNP index。置信区间以没有QTL为零假设，按照给定混池个体数和覆盖深度进行10，000模拟得到。按照2Mb窗口大小、200kb步长进行滑窗统计 (sliding window) 得到最终结果并绘图。
+
+## 引物设计
+为进行后续精细定位，根据变异分析的到的InDel (Insertion/Deletion) 位点设计引物。筛选双亲间有差异且纯合的InDel位点，进而使用primer3<sup>[10](#ref),[11](#ref)</sup>软件批量设计引物。对与得到的引物，使用e-PCR (version: 2.3.12) 进行特异性检测。
+
+# 分析结果
+## 样本信息
+```{R echo = FALSE}
+knitr::kable(sampleInfo, format.args = list(big.interval = 3L, big.mark = ",", digits = 3, scientific = FALSE))
+```
+
+## 数据过滤和统计
+我们统计了过滤前后的数据量、GC含量、Q20、Q30、过滤后数据有效率等，具体如下表：
+```{R echo = FALSE}
+knitr::kable(data_stat, format.args = list(big.interval = 3L, big.mark = ",", digits = 3, scientific = FALSE))
+```
+
+## 比对结果
+将过滤后的clean data比对到zs11参考基因组，比对率如下表：
+```{R echo = FALSE}
+knitr::kable(align_stat, format.args = list(big.interval = 3L, big.mark = ",", digits = 3, scientific = FALSE))
+```
+
+覆盖度统计如下表：
+
+```{R echo = FALSE}
+knitr::kable(cov_stat, format.args = list(big.interval = 3L, big.mark = ",", digits = 3, scientific = FALSE))
+```
+
+各个材料覆盖深度如下图：
+
+<img src="./result/01.Mapping/CoverageDepth.png" width="600px">
+
+## 变异检测和注释 {.tabset .tabset-fade .tabset-pills}
+经过变异检测和过滤，最终得到`r prettyNum(sum(SNP_distribution$number),big.mark=",",scientific=FALSE)`个SNP，`r prettyNum(sum(INDEL_distribution$number),big.mark=",",scientific=FALSE)`个INDEL。对变异所处位置和可能引起的功能变化进行注释，结果如下：
+
+### SNP
+从下图可以看出在非编码区域的SNP数量较多，而分布在编码区的SNP较少，并且同义突变的SNP数目最多
+
+```{R echo = FALSE}
+knitr::kable(SNP_distribution, format.args = list(big.interval = 3L, big.mark = ",", digits = 3, scientific = FALSE))
+```
+
+<img src="./result/03.Annotation/BSA.filter.SNPs.distribution.png" width="500px">
+
+```{R echo = FALSE}
+knitr::kable(SNP_exonic_variant_function, format.args = list(big.interval = 3L, big.mark = ",", digits = 3, scientific = FALSE))
+```
+
+<img src="./result/03.Annotation/BSA.filter.SNPs.anno.exonic_variant_function.png" width="400px">
+
+### InDel
+从下图可以看出在非编码区域的InDel数量较多，而分布在编码区的InDel较少
+
+
+```{R echo = FALSE}
+knitr::kable(INDEL_distribution, format.args = list(big.interval = 3L, big.mark = ",", digits = 3, scientific = FALSE))
+```
+
+<img src="./result/03.Annotation/BSA.filter.INDELs.distribution.png" width="500px">
+
+```{R echo = FALSE}
+knitr::kable(INDEL_exonic_variant_function, format.args = list(big.interval = 3L, big.mark = ",", digits = 3, scientific = FALSE))
+```
+
+<img src="./result/03.Annotation/BSA.filter.INDELs.anno.exonic_variant_function.png" width="400px">
+
+## QTL-seq分析结果 {.tabset .tabset-fade .tabset-pills}
+```{r, results='asis', echo = FALSE}
+for (pop in populations) {
+  cat(paste("###", pop, sep = " "), "群体\n", sep = "")
+  cat("进一步进行筛选，首先选取亲本内纯合、亲本间不同的SNP位点，进一步去掉在各个材料的覆盖深度低的位点，统计剩余SNP位点的分布,结果如下图\n\n")
+  cat("<img src='./result/04.Analysis/", pop, ".SNP_distribution_histogram.png' width='500px'>\n\n", sep = "")
+  cat("进而计算两个混池的SNP index以及delta SNP index，经过滑窗统计最终结果如下：\n\n")
+  cat("<img src='./result/04.Analysis/", pop, ".delta_SNP_index.99CI.point.png' width='800px'>\n\n", sep = "")
+}
+```
+
+## 引物设计
+最后一共在191,113个InDel位点成功设计引物 (05.Primer/`r prefix`.filter.primer.csv.gz)。在选择引物时应根据对应亲本基因型，并选择扩增片段长度差异大小合适的引物。同时应注意，引物设计和e-PCR都是根据参考基因组进行的，其真实情况仍需进行PAGE电泳验证。
+
+注：BSA.filter.primer.csv.gz中结果为可靠性较高的结果，在后期缩小区间后若标记密度不够可以在BSA.primer.csv.gz中进一步筛选 (数量更多，但实验验证能用的引物比例稍低)。
+
+ <div id="ref"></div>
+ 
+# 参考文献
+1. Takagi, H., Abe, A., Yoshida, K., Kosugi, S., Natsume, S., Mitsuoka, C., Uemura, A., Utsushi, H., Tamiru, M., Takuno, S., Innan, H., Cano, L. M., Kamoun, S., & Terauchi, R. (2013). QTL-seq: rapid mapping of quantitative trait loci in rice by whole genome resequencing of DNA from two bulked populations. The Plant journal : for cell and molecular biology, 74(1), 174–183. https://doi.org/10.1111/tpj.12105
+2. Giovannoni, J. J., Wing, R. A., Ganal, M. W., & Tanksley, S. D. (1991). Isolation of molecular markers from specific chromosomal intervals using DNA pools from existing mapping populations. Nucleic acids research, 19(23), 6553–6558. https://doi.org/10.1093/nar/19.23.6553
+3. Michelmore, R. W., Paran, I., & Kesseli, R. V. (1991). Identification of markers linked to disease-resistance genes by bulked segregant analysis: a rapid method to detect markers in specific genomic regions by using segregating populations. Proceedings of the National Academy of Sciences of the United States of America, 88(21), 9828–9832. https://doi.org/10.1073/pnas.88.21.9828
+4. Chen, S., Zhou, Y., Chen, Y., & Gu, J. (2018). fastp: an ultra-fast all-in-one FASTQ preprocessor. Bioinformatics (Oxford, England), 34(17), i884–i890. https://doi.org/10.1093/bioinformatics/bty560
+5. Langmead, B., & Salzberg, S. L. (2012). Fast gapped-read alignment with Bowtie 2. Nature methods, 9(4), 357–359. https://doi.org/10.1038/nmeth.1923
+6. `r ref_cite`
+7. Tarasov, A., Vilella, A. J., Cuppen, E., Nijman, I. J., & Prins, P. (2015). Sambamba: fast processing of NGS alignment formats. Bioinformatics (Oxford, England), 31(12), 2032–2034. https://doi.org/10.1093/bioinformatics/btv098
+8. Li, H., Handsaker, B., Wysoker, A., Fennell, T., Ruan, J., Homer, N., Marth, G., Abecasis, G., Durbin, R., & 1000 Genome Project Data Processing Subgroup (2009). The Sequence Alignment/Map format and SAMtools. Bioinformatics (Oxford, England), 25(16), 2078–2079. https://doi.org/10.1093/bioinformatics/btp352
+9. McKenna, A., Hanna, M., Banks, E., Sivachenko, A., Cibulskis, K., Kernytsky, A., Garimella, K., Altshuler, D., Gabriel, S., Daly, M., & DePristo, M. A. (2010). The Genome Analysis Toolkit: a MapReduce framework for analyzing next-generation DNA sequencing data. Genome research, 20(9), 1297–1303. https://doi.org/10.1101/gr.107524.110
+10. Untergasser, A., Cutcutache, I., Koressaar, T., Ye, J., Faircloth, B. C., Remm, M., & Rozen, S. G. (2012). Primer3--new capabilities and interfaces. Nucleic acids research, 40(15), e115. https://doi.org/10.1093/nar/gks596
+11. Koressaar, T., & Remm, M. (2007). Enhancements and modifications of primer design program Primer3. Bioinformatics (Oxford, England), 23(10), 1289–1291. https://doi.org/10.1093/bioinformatics/btm091
