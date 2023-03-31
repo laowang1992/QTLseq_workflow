@@ -2,7 +2,7 @@ library(jsonlite)
 library(tidyverse)
 
 all <- tibble()
-
+setwd("./01.clean_data")
 #sample <- "DiParent"
 for (sample in list.files(pattern = "json") %>% basename() %>% str_remove(".json")) {
   df <- jsonlite::fromJSON(paste(sample, "json", sep = "."))
@@ -17,5 +17,5 @@ for (sample in list.files(pattern = "json") %>% basename() %>% str_remove(".json
 }
 
 all <- all %>% mutate(effective.rate = total_bases.clean / total_bases.raw)
-write_csv(x = all, file = "data_stat.csv")
-write_tsv(x = all, file = "data_stat.txt")
+write_csv(x = all, file = "../data_stat.csv")
+write_tsv(x = all, file = "../data_stat.txt")
