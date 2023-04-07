@@ -24,46 +24,14 @@
 # Program:
 # 	BSA 
 # History:
-# 	2021/02/20	First release  
-
+# 	2021-02-20	First release  
+# 	2023-03-31	Second release
 ## 加载配置文件
 . ./.conf
 
 ## call variation
 cd ${work_dir}/script
 sh call_vari.sh
-
-##
-cd ${work_dir}/04.Analysis
-
-qtlseq=0
-if [ $qtlseq = 1 ]; then
-	Rscript bsa.R \
-		--input ${filename}.filter.SNPs.txt --out ${out} \
-		--highP ${highP} --lowP ${lowP} --highB ${highB} --lowB ${lowB} \
-		--minQ ${minQ} \
-		--minHPdp ${minHPdp} --maxHPdp ${maxHPdp} \
-		--minLPdp ${minHPdp} --maxLPdp ${maxLPdp} \
-		--minHBdp ${minHBdp} --maxHBdp ${maxHBdp} \
-		--minLBdp ${minHBdp} --maxLBdp ${maxLBdp} \
-		--winSize ${winSize} --winStep ${winStep} \
-		--minN ${minN} \
-		--width ${width} --height ${height}
-
-	Rscript QTLseqr.R \
-		--input ${filename}.filter.SNPs.table --out ${out} \
-		--highP ${highP} --lowP ${lowP} --highB ${highB} --lowB ${lowB} \
-		--bulkSizeH ${bulkSizeH} --bulkSizeL ${bulkSizeL} \
-		--minQ ${minQ} --minGQ ${minGQ}\
-		--minHPdp ${minHPdp} --maxHPdp ${maxHPdp} \
-		--minLPdp ${minHPdp} --maxLPdp ${maxLPdp} \
-		--minHBdp ${minHBdp} --maxHBdp ${maxHBdp} \
-		--minLBdp ${minHBdp} --maxLBdp ${maxLBdp} \
-		--popType ${popType} \
-		--winSize ${winSize} --winStep ${winStep} \
-		--minN ${minN} \
-		--width ${width} --height ${height}
-fi
-## primer
-cd ${work_dir}/05.Primer
-#sh primer.sh
+sh QTLseq.sh
+sh annotation.sh
+sh statistics.sh

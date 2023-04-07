@@ -30,13 +30,13 @@ p <- add_argument(p, "--bulkSizeL", help = "Bulk size with low phenotype", type 
 p <- add_argument(p, "--minGQ", help = "Minimum GQ for parent genotype", type = "numeric", default = 20)
 #
 p <- add_argument(p, "--minHPdp", help = "Minimum depth for high parent", type = "numeric", default = 6)
-p <- add_argument(p, "--maxHPdp", help = "Maxmum depth for high parent", type = "numeric", default = 100)
+#p <- add_argument(p, "--maxHPdp", help = "Maxmum depth for high parent", type = "numeric", default = 100)
 p <- add_argument(p, "--minLPdp", help = "Minimum depth for low parent", type = "numeric", default = 6)
-p <- add_argument(p, "--maxLPdp", help = "Maxmum depth for low parent", type = "numeric", default = 100)
+#p <- add_argument(p, "--maxLPdp", help = "Maxmum depth for low parent", type = "numeric", default = 100)
 p <- add_argument(p, "--minHBdp", help = "Minimum depth for high bulk", type = "numeric", default = 6)
-p <- add_argument(p, "--maxHBdp", help = "Maxmum depth for high bulk", type = "numeric", default = 100)
+#p <- add_argument(p, "--maxHBdp", help = "Maxmum depth for high bulk", type = "numeric", default = 100)
 p <- add_argument(p, "--minLBdp", help = "Minimum depth for low bulk", type = "numeric", default = 6)
-p <- add_argument(p, "--maxLBdp", help = "Maxmum depth for low bulk", type = "numeric", default = 100)
+#p <- add_argument(p, "--maxLBdp", help = "Maxmum depth for low bulk", type = "numeric", default = 100)
 #
 p <- add_argument(p, "--winSize", help = "Window size for sliding window statistics", type = "numeric", default = 2000000)
 p <- add_argument(p, "--winStep", help = "Window step for sliding window statistics", type = "numeric", default = 200000)
@@ -64,8 +64,8 @@ if (argv$createParameter) {
                           highParent = argv$highP, lowParent = argv$lowP, highBulk = argv$highB, lowBulk = argv$lowB, 
                           populationType = argv$popType, highBulkSize = argv$bulkSizeH, lowBulkSize = argv$bulkSizeL, 
                           minGQ = argv$minGQ, 
-                          minHPdp = argv$minHPdp, maxHPdp = argv$maxHPdp, minLPdp = argv$minLPdp, maxLPdp = argv$maxLPdp, 
-                          minHBdp = argv$minHBdp, maxHBdp = argv$maxHBdp, minLBdp = argv$minLBdp, maxLBdp = argv$maxLBdp, 
+                          minHPdp = argv$minHPdp, minLPdp = argv$minLPdp, 
+                          minHBdp = argv$minHBdp, minLBdp = argv$minLBdp, 
                           winSize = argv$winSize, winStep = argv$winStep, minN = argv$minN, 
                           width = argv$width, height = argv$height
                           )
@@ -104,16 +104,16 @@ if (FALSE) {
   minGQ <- 20
   ## filter depth parameter
   minHPdp <- 6
-  maxHPdp <- 60
+  #maxHPdp <- 60
   
   minLPdp <- 6
-  maxLPdp <- 60
+  #maxLPdp <- 60
   
   minHBdp <- 6
-  maxHBdp <- 60
+  #maxHBdp <- 60
   
   minLBdp <- 6
-  maxLBdp <- 60
+  #maxLBdp <- 60
   
   ## sliding window parameter
   winSize <- 2000000
@@ -139,8 +139,7 @@ if (is.na(argv$parameter)) {
   parameter <- data.frame(filename = argv$input, outPrefix = argv$out, CI = argv$CI, minGQ = argv$minGQ, 
                           highParent = argv$highP, lowParent = argv$lowP, highBulk = argv$highB, lowBulk = argv$lowB, 
                           populationType = argv$popType, highBulkSize = argv$bulkSizeH, lowBulkSize = argv$bulkSizeL, 
-                          minHPdp = argv$minHPdp, maxHPdp = argv$maxHPdp, minLPdp = argv$minLPdp, maxLPdp = argv$maxLPdp, 
-                          minHBdp = argv$minHBdp, maxHBdp = argv$maxHBdp, minLBdp = argv$minLBdp, maxLBdp = argv$maxLBdp, 
+                          minHPdp = argv$minHPdp, minLPdp = argv$minLPdp, minHBdp = argv$minHBdp, minLBdp = argv$minLBdp, 
                           winSize = argv$winSize, winStep = argv$winStep, minN = argv$minN, 
                           width = argv$width, height = argv$height
                           )
@@ -169,16 +168,16 @@ for (i in seq_along(parameter[,1])) {
   minGQ <- parameter$minGQ[i]
   # filter depth parameter
   minHPdp <- parameter$minHPdp[i]
-  maxHPdp <- parameter$maxHPdp[i]
+  #maxHPdp <- parameter$maxHPdp[i]
   
   minLPdp <- parameter$minLPdp[i]
-  maxLPdp <- parameter$maxLPdp[i]
+  #maxLPdp <- parameter$maxLPdp[i]
   
   minHBdp <- parameter$minHBdp[i]
-  maxHBdp <- parameter$maxHBdp[i]
+  #maxHBdp <- parameter$maxHBdp[i]
   
   minLBdp <- parameter$minLBdp[i]
-  maxLBdp <- parameter$maxLBdp[i]
+  #maxLBdp <- parameter$maxLBdp[i]
   
   # sliding window parameter
   winSize <- parameter$winSize[i]
@@ -220,9 +219,9 @@ for (i in seq_along(parameter[,1])) {
     tmp <- highB; highB <- lowB; lowB <- tmp
     tmp <- bulkSizeH; bulkSizeH <- bulkSizeL; bulkSizeL <- tmp
     tmp <- minHPdp; minHPdp <- minLPdp; minLPdp <- tmp
-    tmp <- maxHPdp; maxHPdp <- maxLPdp; maxLPdp <- tmp
+    #tmp <- maxHPdp; maxHPdp <- maxLPdp; maxLPdp <- tmp
     tmp <- minHBdp; minHBdp <- minLBdp; minLBdp <- tmp
-    tmp <- maxHBdp; maxHBdp <- maxLBdp; maxLBdp <- tmp
+    #tmp <- maxHBdp; maxHBdp <- maxLBdp; maxLBdp <- tmp
     source("./for_1_parent.R")
   } else {
     cat("There is 0 parent\n")
@@ -238,9 +237,7 @@ for (i in seq_along(parameter[,1])) {
   write.table(x = parameter[i,], paste(outPrefix, "parameter.txt", sep = "."), quote = F, sep = "\t", row.names = F)
   df <- selectSample_and_filterGT(data = data, highP = highP, lowP = lowP, highB = highB, lowB = lowB, minGQ = minGQ)
   depth_statistics(data = df, outPrefix = outPrefix, highP = highP, lowP = lowP, highB = highB, lowB = lowB)
-  final_dp <- filterDP(data = df, minHPdp = minHPdp, maxHPdp = maxHPdp, 
-                       minLPdp = minLPdp, maxLPdp = maxLPdp, minHBdp = minHBdp, 
-                       maxHBdp = maxHBdp, minLBdp = minLBdp, maxLBdp = maxLBdp)
+  final_dp <- filterDP(data = df, minHPdp = minHPdp, minLPdp = minLPdp, minHBdp = minHBdp, minLBdp = minLBdp)
   SNP_distribution(data = final_dp, outPrefix = outPrefix, chr = chr)
   export_dp(data = final_dp, outPrefix = outPrefix, highP = highP, lowP = lowP, highB = highB, lowB = lowB)
   slidwin <- calc_index_etc(data = final_dp, CI = CI, outPrefix = outPrefix, 

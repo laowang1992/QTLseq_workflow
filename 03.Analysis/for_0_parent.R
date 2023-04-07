@@ -42,17 +42,26 @@ depth_statistics <- function(data, outPrefix, highP, lowP, highB, lowB){
   dp <- data %>% dplyr::select(HB = HB.DP, LB = LB.DP) %>%
     gather(key = "sample", value = "depth")
   dp$sample <- factor(dp$sample, levels = c("HB", "LB"), labels = c(highB, lowB))
+  upper <- dp %>% group_by(sample) %>% summarise(ave = mean(depth), sd = sd(depth)) %>% mutate(upper = ave+6*sd) %>% pull(upper) %>% max()
   P_dp <- ggplot(dp, aes(x = depth)) + 
     geom_histogram(aes(y = after_stat(density), fill = sample), binwidth = 2) +
     geom_density() + 
-    scale_x_continuous(limits = c(0, 100)) +
+    scale_x_continuous(limits = c(0, upper)) +
     theme_half_open() +
     facet_wrap(~sample, nrow = 1)
   ggsave(P_dp, filename = paste(outPrefix, "depth_desity.pdf", sep = "."), height = 3.5, width = 6)
   ggsave(P_dp, filename = paste(outPrefix, "depth_desity.png", sep = "."), height = 3.5, width = 6, dpi = 500)
 }
 
-filterDP <- function(data, minHPdp, maxHPdp, minLPdp, maxLPdp, minHBdp, maxHBdp, minLBdp, maxLBdp){
+filterDP <- function(data, minHPdp, minLPdp, minHBdp, minLBdp){
+  # 根据深度过滤，上限由以前的自定义改为设置成ave+3*sd
+  dp <- data %>% dplyr::select(HB = HB.DP, LB = LB.DP) %>%
+    gather(key = "sample", value = "depth")
+  stat <- dp %>% group_by(sample) %>% 
+    summarise(ave = mean(depth), sd = sd(depth), upper = ave+3*sd, outer = sum(depth>upper), `outerRate` = paste(round(x = outer/n()*100, digits = 3), "%"))
+  print(stat)
+  maxHBdp <- stat$upper[stat$sample %in% "HB"]
+  maxLBdp <- stat$upper[stat$sample %in% "LB"]
   # 根据深度过滤
   df <- data %>% filter(HB.DP > minHBdp, HB.DP < maxHBdp,
                         LB.DP > minLBdp, LB.DP < maxLBdp)

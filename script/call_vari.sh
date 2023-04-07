@@ -1,14 +1,8 @@
-####################################################
-## æ•°æ®å‡†å¤‡
-## å»ºåŸºå› ç»„ç´¢å¼•
+# ½¨Ë÷Òı
 cd ${work_dir}/refseq
-# annovarå»ºåº“
-gffread ${gff} -T -o ${gtf}
-gtfToGenePred  -genePredExt ${gtf} genome_refGene.txt
-retrieve_seq_from_fasta.pl --format refGene --seqfile ${genome} genome_refGene.txt --out genome_refGeneMrna.fa
-#
 samtools faidx ${genome}
-java -jar ${picard} CreateSequenceDictionary R=${genome} O=${genome/fa/dict}
+awk '{print $1"\t"$2}' ${genome}.fai > ref.len
+java -jar ${picard} CreateSequenceDictionary --REFERENCE ${genome} --OUTPUT ${genome/fa/dict}
 if [ $aligner = bowtie2 ];then
 	bowtie2-build ${genome} ${index}
 elif [ $aligner = mem ];then
@@ -17,26 +11,15 @@ elif [ $aligner = mem2 ];then
 	bwa-mem2 index ${genome} -p ${index}
 fi
 
-awk '{print $1"\t"$2}' ${genome}.fai > ref.len
-bedtools makewindows -w 200000 -s 100000 -g ref.len > ref.window.bed
-cp ref.len ${work_dir}/03.Analysis/
-cp chrom.txt ${work_dir}/03.Analysis/
-cp ref.len ${work_dir}/04.Annotation/
-cp chrom.txt ${work_dir}/04.Annotation/
-####################################################
-
-####################################################
-## call variation
 cat ${sampleInfo} | while read sample group fq1 fq2
 do
-# è´¨æ§ è¿‡æ»¤
+# ÖÊ¿Ø ¹ıÂË
 cd ${work_dir}/00.data/01.clean_data
-
 fastp -i ${fq1} -o ./${sample}_1.clean.fastq.gz \
       -I ${fq2} -O ./${sample}_2.clean.fastq.gz \
       --json=./${sample}.json --html=${sample}.html --report_title="${sample} fastp report" \
       --thread=${thread} --length_required 50
-# æ¯”å¯¹
+# ±È¶Ô
 cd ${work_dir}/01.Mapping
 if [ $aligner = bowtie2 ];then
 	bowtie2 --rg-id ${sample} --rg "PL:ILLUMINA" --rg "SM:${sample}" \
@@ -63,7 +46,7 @@ elif [ $aligner = mem2 ];then
 		-o ${sample}.sam \
 		2> ${sample}.log
 fi
-# æ’åº
+# ÅÅĞò
 if [ $sort = sbb ];then
 	sambamba view --format=bam --with-header --sam-input --nthreads=${thread} --output-filename ${sample}.bam ${sample}.sam
 	sambamba sort --nthreads=${thread} --memory-limit=20GB --tmpdir=./ --out=${sample}.sort.bam ${sample}.bam
@@ -76,8 +59,8 @@ rm ${sample}.sam
 done
 
 cd ${work_dir}/01.Mapping
-# å»é‡å¤
-# sambamba markdupåœ¨batché˜Ÿåˆ—ä½¿ç”¨28çº¿ç¨‹æ—¶ä¼šä¼‘çœ ï¼Œå¡åœ¨è¿™é‡Œä¸åŠ¨
+# È¥ÖØ¸´
+# sambamba markdupÔÚbatch¶ÓÁĞÊ¹ÓÃ28Ïß³ÌÊ±»áĞİÃß£¬¿¨ÔÚÕâÀï²»¶¯
 if [ $rmdup = picard ];then
 	awk '{print $1}' ${sampleInfo} | \
 		parallel -j ${thread} -I% --max-args 1 \
@@ -97,7 +80,7 @@ fi
 rm *sort.bam *sort.bam.bai
 
 cd ${work_dir}/02.SNP_indel
-# GATK HaplotypeCallerå¤šçº¿ç¨‹
+# GATK HaplotypeCaller¶àÏß³Ì
 for sample in $(awk '{print $1}' ${sampleInfo})
 do
 	java -Xmx20g -jar ${gatk} \
@@ -134,7 +117,7 @@ java -Xmx30g -jar ${gatk} \
 #     --filterName FilterReadPosRankSum --filterExpression "ReadPosRankSum<-3.0" \
 #     &> ${filename}.VariantFiltration.log
 
-# 20220813ï¼Œä¿®æ”¹è¿‡æ»¤å‚æ•°ï¼Œä»¥å‰çš„æœ‰ç‚¹å¤ªä¸¥æ ¼ï¼Œåœ¨202208_BnQTLseqé¡¹ç›®ä¸­æ ¹æ®VariantQCç»“æœï¼ŒFSã€MQRankSumå’ŒQDä¼šè¿‡æ»¤æ‰ä¸€åŠä½ç‚¹
+# 20220813£¬ĞŞ¸Ä¹ıÂË²ÎÊı£¬ÒÔÇ°µÄÓĞµãÌ«ÑÏ¸ñ£¬ÔÚ202208_BnQTLseqÏîÄ¿ÖĞ¸ù¾İVariantQC½á¹û£¬FS¡¢MQRankSumºÍQD»á¹ıÂËµôÒ»°ëÎ»µã
 java -Xmx30g -jar ${gatk} \
      -R ${genome} -T VariantFiltration \
      -o ${filename}.flt.vcf.gz -V ${filename}.gatk.vcf.gz \
@@ -146,104 +129,8 @@ java -Xmx30g -jar ${gatk} \
      --filterName FilterReadPosRankSum --filterExpression "ReadPosRankSum<-3.0" \
      &> ${filename}.VariantFiltration.log
 
-# æ”¹æˆbcftoolsï¼Œä¿ç•™bi-allele
+# ¸Ä³Ébcftools£¬±£Áôbi-allele
 bcftools view -f PASS -o ${filename}.filter.SNPs.vcf.gz -O z -m 2 -M 2 -v snps --threads ${thread} ${filename}.flt.vcf.gz
 bcftools view -f PASS -o ${filename}.filter.INDELs.vcf.gz -O z -m 2 -M 2 -v indels --threads ${thread} ${filename}.flt.vcf.gz
 bcftools index -t ${filename}.filter.SNPs.vcf.gz
 bcftools index -t ${filename}.filter.INDELs.vcf.gz
-
-java -Xmx30g -jar ${gatk} \
-     -R ${genome} -T VariantsToTable \
-     -F CHROM -F POS -F REF -F ALT -GF GT -GF AD -GF GQ \
-     -V ${filename}.filter.SNPs.vcf.gz -o ../03.Analysis/${filename}.filter.SNPs.table
-java -Xmx30g -jar ${gatk} \
-     -R ${genome} -T VariantsToTable \
-     -F CHROM -F POS -F REF -F ALT -GF GT -GF AD -GF GQ \
-     -V ${filename}.filter.INDELs.vcf.gz -o ../03.Analysis/${filename}.filter.INDELs.table
-
-cd ${work_dir}/03.Analysis
-gzip ${filename}.filter.SNPs.table
-gzip ${filename}.filter.INDELs.table
-# QTL-seqåˆ†æ
-Rscript QTLseq.R -i ${filename}.filter.SNPs.table.gz -p Parameter.csv
-
-####################################################
-
-####################################################
-# annotation
-cd ${work_dir}/04.Annotation
-# å› ä¸ºè¿è¡ŒRè„šæœ¬ä»¥åä¸€äº›è¾“å‡ºæ–‡ä»¶ä¼šè¢«è¦†ç›–ï¼Œæ‰€ä»¥å…ˆå¤„ç†å®ŒSNPå†ç”¨INDELè·‘ä¸€é
-Rscript select_variation.R -i ../03.Analysis/${filename}.filter.SNPs.table.gz -p ../03.Analysis/Parameter.csv
-for i in `cut -f1 -d',' ${work_dir}/03.Analysis/Parameter.csv | awk '{if(NR!=1) print }'`
-do
-	cd ${work_dir}/04.Annotation/${i}
-	cut -f1,2 ${i}.Depth_information.txt | awk '{if(NR!=1) print }' > ${i}.pos.txt
-	bcftools view -R ${i}.pos.txt -Oz -o ./${i}.SNPs.vcf.gz --threads ${thread} ${work_dir}/02.SNP_indel/${filename}.filter.SNPs.vcf.gz
-	convert2annovar.pl --format vcf4old ./${i}.SNPs.vcf.gz --outfile ./${i}.SNPs.annovar.input
-	annotate_variation.pl --geneanno --neargene 2000 -buildver genome --dbtype refGene --outfile ./${i}.SNPs.anno --exonsort ./${i}.SNPs.annovar.input ${work_dir}/refseq
-	rm ${i}.Depth_information.csv ${i}.Depth_information.txt ${i}.SNPs.vcf.gz ${i}.parameter.txt ${i}.pos.txt
-done
-cd ${work_dir}/04.Annotation
-Rscript select_variation.R -i ../03.Analysis/${filename}.filter.INDELs.table.gz -p ../03.Analysis/Parameter.csv
-for i in `cut -f1 -d',' ${work_dir}/03.Analysis/Parameter.csv | awk '{if(NR!=1) print }'`
-do
-	cd ${work_dir}/04.Annotation/${i}
-	cut -f1,2 ${i}.Depth_information.txt | awk '{if(NR!=1) print }' > ${i}.pos.txt
-	bcftools view -R ${i}.pos.txt -Oz -o ./${i}.INDELs.vcf.gz --threads ${thread} ${work_dir}/02.SNP_indel/${filename}.filter.INDELs.vcf.gz
-	convert2annovar.pl --format vcf4old ./${i}.INDELs.vcf.gz --outfile ./${i}.INDELs.annovar.input
-	annotate_variation.pl --geneanno --neargene 2000 -buildver genome --dbtype refGene --outfile ./${i}.INDELs.anno --exonsort ./${i}.INDELs.annovar.input ${work_dir}/refseq
-	rm ${i}.Depth_information.csv ${i}.Depth_information.txt ${i}.INDELs.vcf.gz ${i}.parameter.txt ${i}.pos.txt
-done
-cd ${work_dir}/04.Annotation
-for i in `cut -f1 -d',' ${work_dir}/03.Analysis/Parameter.csv | awk '{if(NR!=1) print }'`
-do
-	cd ${work_dir}/04.Annotation/${i}
-	Rscript ../AnnoStat.R --snpvar ${i}.SNPs.anno.variant_function \
-		--indelvar ${i}.INDELs.anno.variant_function \
-		--snpex ${i}.SNPs.anno.exonic_variant_function \
-		--indelex ${i}.INDELs.anno.exonic_variant_function
-done
-
-####################################################
-
-####################################################
-##  Statistics
-# fastQC
-cd ${work_dir}/00.data/00.raw_data
-fastqc -o ./QC --nogroup --threads ${thread} `cut -f3,4 ../samples.txt`
-cd ${work_dir}/00.data/01.clean_data
-fastqc -o ./QC --nogroup --threads ${thread} *clean.fastq.gz
-# data stat
-cd ${work_dir}/00.data/
-Rscript dataStat.R
-
-cd ${work_dir}/01.Mapping
-# coverage rate
-awk '{print $1}' ${sampleInfo} | \
-        parallel -j ${thread} -I% --max-args 1 \
-        genomeCoverageBed -ibam %.dd.bam -bga -g ${genome} "|" \
-        grep -w "0$" ">" %.0cov.bedgraph
-Rscript covStat.R ${genome}.fai
-
-# depth
-awk '{print $1}' ${sampleInfo} | \
-	parallel -j ${thread} -I% --max-args 1 \
-	bedtools bamtobed -i %.dd.bam ">" %.dd.bed
-for i in $(cut -f1 ${sampleInfo})
-do
-bedtools coverage -b $i.dd.bed -a ${work_dir}/refseq/ref.window.bed -mean | \
-	awk '{print $1"\t"$2+1"\t"$3"\t"$4}' > $i.dd.window.depth
-rm $i.dd.bed
-done
-Rscript CoverageDepth.R --sampleInfo ${sampleInfo} --chrInfo ../refseq/chrom.txt --chrLen ../refseq/ref.len
-
-# align rate
-if [ $aligner = bowtie2 ];then
-	echo -e "Sample,Total read,Mapping read,Mapping rate,Unique mapping read,Unique mapping rate" > align_stat.csv
-	for i in $(cut -f1 ${sampleInfo}); do perl alignStat.pl $i; done >> align_stat.csv
-fi
-
-cd ${work_dir}/02.SNP_indel
-# VariantQC
-java -jar ${DISCVRSeq} VariantQC -O ${filename}.flt.report.html -R ${genome} -V ${filename}.flt.vcf.gz --maxContigs 19 --threads ${thread}
-
