@@ -1,2 +1,2 @@
-"outPrefix","CI","highParent","lowParent","highBulk","lowBulk","populationType","highBulkSize","lowBulkSize","minGQ","minHPdp","maxHPdp","minLPdp","maxLPdp","minHBdp","maxHBdp","minLBdp","maxLBdp","winSize","winStep","minN","width","height"
-,,,,,,,,,20,6,100,6,100,6,100,6,100,2e+06,2e+05,20,12,4
+"outPrefix","CI","highParent","lowParent","highBulk","lowBulk","populationType","highBulkSize","lowBulkSize","minGQ","minHPdp","minLPdp","minHBdp","minLBdp","winSize","winStep","minN","width","height"
+,,,,,,,,,20,6,6,6,6,2e+06,2e+05,20,12,4

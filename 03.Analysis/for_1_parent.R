@@ -75,9 +75,9 @@ filterDP <- function(data, minHPdp, minLPdp, minHBdp, minLBdp){
   stat <- dp %>% group_by(sample) %>% 
     summarise(ave = mean(depth), sd = sd(depth), upper = ave+3*sd, outer = sum(depth>upper), `outerRate` = paste(round(x = outer/n()*100, digits = 3), "%"))
   print(stat)
-  maxHPdp <- stat$upper[stat$sample %in% "HP"]
-  maxHBdp <- stat$upper[stat$sample %in% "HB"]
-  maxLBdp <- stat$upper[stat$sample %in% "LB"]
+  maxHPdp <<- ceiling(stat$upper[stat$sample %in% "HP"])
+  maxHBdp <<- ceiling(stat$upper[stat$sample %in% "HB"])
+  maxLBdp <<- ceiling(stat$upper[stat$sample %in% "LB"])
   # 根据深度过滤
   df <- data %>% filter(HP.DP > minHPdp, HP.DP < maxHPdp,
                         HB.DP > minHBdp, HB.DP < maxHBdp,

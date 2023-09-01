@@ -34,4 +34,5 @@ cd ${work_dir}/script
 sh call_vari.sh
 sh QTLseq.sh
 sh annotation.sh
+sh primer.sh
 sh statistics.sh

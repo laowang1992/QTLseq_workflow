@@ -33,7 +33,7 @@ if (FALSE) {
   bulkSizeH <- 30
   bulkSizeL <- 30
   minDepth <- 5
-  maxDepth <- 200
+  maxDepth <- 150
   repN <- 10000
 }
 library(tidyverse)
@@ -191,6 +191,9 @@ getQTLseqCI <- function(popType, bulkSizeH, bulkSizeL, minDepth = 5, maxDepth = 
     scale_x_continuous(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
     scale_fill_distiller(palette = "RdBu") +
+    #scale_fill_gradientn(colors = c("#4682B4", "white", "white", "#FF4500"), 
+    #                     values = c(0, (max(dltIndex_CI$CI95lower, dltIndex_CI$CI99lower) - min(dltIndex_CI$CI95lower, dltIndex_CI$CI99lower)) / (max(dltIndex_CI$CI95upper, dltIndex_CI$CI99upper) - min(dltIndex_CI$CI95lower, dltIndex_CI$CI99lower)),
+    #                                (min(dltIndex_CI$CI95upper, dltIndex_CI$CI99upper) - min(dltIndex_CI$CI95lower, dltIndex_CI$CI99lower)) / (max(dltIndex_CI$CI95upper, dltIndex_CI$CI99upper) - min(dltIndex_CI$CI95lower, dltIndex_CI$CI99lower)), 1)) +
     labs(title = paste("CI", 
                        paste(paste("indH", bulkSizeH, sep = ""), 
                              paste("indL", bulkSizeL, sep = ""), 

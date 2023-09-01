@@ -30,13 +30,15 @@ p <- add_argument(p, "--bulkSizeL", help = "Bulk size with low phenotype", type 
 p <- add_argument(p, "--minGQ", help = "Minimum GQ for parent genotype", type = "numeric", default = 20)
 #
 p <- add_argument(p, "--minHPdp", help = "Minimum depth for high parent", type = "numeric", default = 6)
-#p <- add_argument(p, "--maxHPdp", help = "Maxmum depth for high parent", type = "numeric", default = 100)
 p <- add_argument(p, "--minLPdp", help = "Minimum depth for low parent", type = "numeric", default = 6)
-#p <- add_argument(p, "--maxLPdp", help = "Maxmum depth for low parent", type = "numeric", default = 100)
 p <- add_argument(p, "--minHBdp", help = "Minimum depth for high bulk", type = "numeric", default = 6)
-#p <- add_argument(p, "--maxHBdp", help = "Maxmum depth for high bulk", type = "numeric", default = 100)
 p <- add_argument(p, "--minLBdp", help = "Minimum depth for low bulk", type = "numeric", default = 6)
-#p <- add_argument(p, "--maxLBdp", help = "Maxmum depth for low bulk", type = "numeric", default = 100)
+# 下面四个参数其实也没有用，真正的最大允许深度根据ave+3*sd计算得出，只是为了兼容以前的命令行参数
+p <- add_argument(p, "--maxHPdp", help = "Maxmum depth for high parent", type = "numeric", default = 100)
+p <- add_argument(p, "--maxLPdp", help = "Maxmum depth for low parent", type = "numeric", default = 100)
+p <- add_argument(p, "--maxHBdp", help = "Maxmum depth for high bulk", type = "numeric", default = 100)
+p <- add_argument(p, "--maxLBdp", help = "Maxmum depth for low bulk", type = "numeric", default = 100)
+
 #
 p <- add_argument(p, "--winSize", help = "Window size for sliding window statistics", type = "numeric", default = 2000000)
 p <- add_argument(p, "--winStep", help = "Window step for sliding window statistics", type = "numeric", default = 200000)
@@ -58,6 +60,7 @@ if (argv$list) {
   print(col_name)
   quit(save = "no")
 }
+# 创建一个参数模板文件
 if (argv$createParameter) {
   cat("You will get a template file of parameter.\n")
   parameter <- data.frame(outPrefix = argv$out, CI = argv$CI, 
@@ -88,8 +91,6 @@ if (FALSE) {
   outPrefix <- "RY"
   
   CI <- "./QTLseqCI.indH30_indL30_F2.Depth_5_200.Rep_10000.RData"
-  ## filter SNP Quality
-  #minQ <- 30
   ##
   bulkSizeH <- 30
   bulkSizeL <- 30
@@ -102,19 +103,12 @@ if (FALSE) {
   popType <- "F2"  # F2 ro RIL
   ##
   minGQ <- 20
-  ## filter depth parameter
+  ## filter depth parameter, only set min depth, max is ave+3*sd
   minHPdp <- 6
-  #maxHPdp <- 60
-  
   minLPdp <- 6
-  #maxLPdp <- 60
-  
   minHBdp <- 6
-  #maxHBdp <- 60
-  
   minLBdp <- 6
-  #maxLBdp <- 60
-  
+
   ## sliding window parameter
   winSize <- 2000000
   winStep <- 200000
@@ -133,7 +127,7 @@ source("./Support_functions.R")
 data <- read_tsv(file = filename, show_col_types = FALSE)
 # 当前目录
 wd <- getwd()
-
+# 
 if (is.na(argv$parameter)) {
   cat("Get parameters from CMD line.\n")
   parameter <- data.frame(filename = argv$input, outPrefix = argv$out, CI = argv$CI, minGQ = argv$minGQ, 
@@ -152,8 +146,6 @@ for (i in seq_along(parameter[,1])) {
   outPrefix <- parameter$outPrefix[i]
   
   CI <- parameter$CI[i]
-  # filter SNP Quality
-  #minQ <- 30
   #
   bulkSizeH <- parameter$highBulkSize[i]
   bulkSizeL <- parameter$lowBulkSize[i]
@@ -168,16 +160,9 @@ for (i in seq_along(parameter[,1])) {
   minGQ <- parameter$minGQ[i]
   # filter depth parameter
   minHPdp <- parameter$minHPdp[i]
-  #maxHPdp <- parameter$maxHPdp[i]
-  
   minLPdp <- parameter$minLPdp[i]
-  #maxLPdp <- parameter$maxLPdp[i]
-  
   minHBdp <- parameter$minHBdp[i]
-  #maxHBdp <- parameter$maxHBdp[i]
-  
   minLBdp <- parameter$minLBdp[i]
-  #maxLBdp <- parameter$maxLBdp[i]
   
   # sliding window parameter
   winSize <- parameter$winSize[i]
@@ -197,31 +182,11 @@ for (i in seq_along(parameter[,1])) {
     source("./for_1_parent.R")
   } else if (!is.na(lowP) && paste(lowP, "GT", sep = ".") %in% colnames(data)) {
     cat("There is only", lowP, "parent\n")
-    # 一个原为修改变量的函数
-    # 这个函数有问题，它不会原位修改，他只会生成两个新变量x和y
-    # 这个函数怎么写还有待思考
-    #swap <- function(x, y) {
-    #  # 用一个临时变量存储x的值
-    #  temp <- x
-    #  # 把y的值赋给x
-    #  x <<- y
-    #  # 把临时变量的值赋给y
-    #  y <<- temp
-    #}
-    #swap(highP, lowP)
-    #swap(highB, lowB)
-    #swap(bulkSizeH, bulkSizeL)
-    #swap(minHPdp, minLPdp)
-    #swap(maxHPdp, maxLPdp)
-    #swap(minHBdp, minLBdp)
-    #swap(maxHBdp, maxLBdp)
     tmp <- highP; highP <- lowP; lowP <- tmp
     tmp <- highB; highB <- lowB; lowB <- tmp
     tmp <- bulkSizeH; bulkSizeH <- bulkSizeL; bulkSizeL <- tmp
     tmp <- minHPdp; minHPdp <- minLPdp; minLPdp <- tmp
-    #tmp <- maxHPdp; maxHPdp <- maxLPdp; maxLPdp <- tmp
     tmp <- minHBdp; minHBdp <- minLBdp; minLBdp <- tmp
-    #tmp <- maxHBdp; maxHBdp <- maxLBdp; maxLBdp <- tmp
     source("./for_1_parent.R")
   } else {
     cat("There is 0 parent\n")

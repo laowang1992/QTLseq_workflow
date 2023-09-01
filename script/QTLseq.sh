@@ -1,4 +1,4 @@
-
+#!/bin/bash
 cd ${work_dir}/refseq
 cp ref.len ${work_dir}/03.Analysis/
 cp chrom.txt ${work_dir}/03.Analysis/

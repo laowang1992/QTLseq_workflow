@@ -132,5 +132,5 @@ java -Xmx30g -jar ${gatk} \
 # ¸Ä³Ébcftools£¬±£Áôbi-allele
 bcftools view -f PASS -o ${filename}.filter.SNPs.vcf.gz -O z -m 2 -M 2 -v snps --threads ${thread} ${filename}.flt.vcf.gz
 bcftools view -f PASS -o ${filename}.filter.INDELs.vcf.gz -O z -m 2 -M 2 -v indels --threads ${thread} ${filename}.flt.vcf.gz
-bcftools index -t ${filename}.filter.SNPs.vcf.gz
-bcftools index -t ${filename}.filter.INDELs.vcf.gz
+bcftools index --tbi --threads $thread ${filename}.filter.SNPs.vcf.gz
+bcftools index --tbi --threads $thread ${filename}.filter.INDELs.vcf.gz

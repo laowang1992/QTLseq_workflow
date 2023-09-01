@@ -1,3 +1,5 @@
+# Author: Wang Pengfei <wangpf0608@126.com>
+
 library(tidyverse)
 
 getQTLseqCI <- function(df, outPrefix, popType, bulkSizeH, bulkSizeL, minDepth = 5, maxDepth = 150, repN = 10000){
@@ -295,8 +297,6 @@ plotTargetChrom <- function(df, CI = 95, minN = 0, outPrefix, chr, len){
 }
 
 # A sliding window function in R.
-# Author: Wang Pengfei <wangpf0608@126.com>
-
 slidingWindow <- function(df, winSize, winStep, groups, position, values, fun){
   # winStep应小于等于winSize
   if (winStep>winSize) {
@@ -309,10 +309,17 @@ slidingWindow <- function(df, winSize, winStep, groups, position, values, fun){
   for (i in 1:nrow(chrLen)) {
     if (chrLen$Len[i]<=winSize) {
       start <- 1
-      end <- winSize
+      end <- chrLen$Len[i]
+      #end <- winSize
     }else{
-      start = seq(from = 1, to = chrLen$Len[i]-winSize+winStep+1, by = winStep)
-      end = seq(from = winSize, to = chrLen$Len[i]+winStep, by = winStep)
+      end <- seq(from = winSize, to = chrLen$Len[i], by = winStep)
+      start <- end - winSize + 1
+      if (end[length(end)] < chrLen$Len[i]) {
+        start <- c(start, start[length(start)]+winStep)
+        end <- c(end, chrLen$Len[i])
+      }
+      #start = seq(from = 1, to = chrLen$Len[i]-winSize+winStep+1, by = winStep)
+      #end = seq(from = winSize, to = chrLen$Len[i]+winStep, by = winStep)
     }
     wid_tmp <- tibble(groups = chrLen$groups[i], Start = start, End = end)
     wid <- rbind(wid, wid_tmp)
@@ -345,7 +352,6 @@ slidingWindow <- function(df, winSize, winStep, groups, position, values, fun){
     #else cat('\r')
     ##########################################################
   }
-  cat(date(), ", Done!\n", sep = "")
   colnames(wid)[1:3] <- c(groups, "win_start", "win_end")
   return(wid)
 }
