@@ -17,7 +17,7 @@ for sample in $(cut -f1 ${sampleInfo})
 do
 	pandepth -i $sample.dd.bam -w 100000 -t $thread -o $sample
 done
-
+Rscript CoverageStatistic.R --sampleInfo ../00.data/samples.txt --chrInfo ../refseq/chrom.txt --chrLen ../refseq/ref.len
 # align rate
 if [ $aligner = bowtie2 ];then
 	echo -e "Sample,Total read,Mapping read,Mapping rate,Unique mapping read,Unique mapping rate" > align_stat.csv
