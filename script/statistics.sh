@@ -1,6 +1,5 @@
 
 cd ${work_dir}/refseq
-bedtools makewindows -w 200000 -s 100000 -g ref.len > ref.window.bed
 
 # Statistics
 # fastQC
@@ -14,29 +13,10 @@ Rscript dataStat.R
 
 cd ${work_dir}/01.Mapping
 # coverage rate and depth
-#for sample in $(cut -f1 ${sampleInfo})
-#do
-#	pandepth -i $sample.dd.bam -w 100000 -t $thread -o $sample
-#done
-
-# coverage rate
-awk '{print $1}' ${sampleInfo} | \
-        parallel -j ${thread} -I% --max-args 1 \
-        genomeCoverageBed -ibam %.dd.bam -bga -g ${genome} "|" \
-        grep -w "0$" ">" %.0cov.bedgraph
-Rscript covStat.R ${genome}.fai
-
-# depth
-awk '{print $1}' ${sampleInfo} | \
-	parallel -j ${thread} -I% --max-args 1 \
-	bedtools bamtobed -i %.dd.bam ">" %.dd.bed
-for i in $(cut -f1 ${sampleInfo})
+for sample in $(cut -f1 ${sampleInfo})
 do
-bedtools coverage -b $i.dd.bed -a ${work_dir}/refseq/ref.window.bed -mean | \
-	awk '{print $1"\t"$2+1"\t"$3"\t"$4}' > $i.dd.window.depth
-rm $i.dd.bed
+	pandepth -i $sample.dd.bam -w 100000 -t $thread -o $sample
 done
-Rscript CoverageDepth.R --sampleInfo ${sampleInfo} --chrInfo ../refseq/chrom.txt --chrLen ../refseq/ref.len
 
 # align rate
 if [ $aligner = bowtie2 ];then
