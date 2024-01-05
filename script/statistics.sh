@@ -14,10 +14,10 @@ Rscript dataStat.R
 
 cd ${work_dir}/01.Mapping
 # coverage rate and depth
-for sample in $(cut -f1 ${sampleInfo})
-do
-	pandepth -i $sample.dd.bam -w 100000 -t $thread -o $sample
-done
+#for sample in $(cut -f1 ${sampleInfo})
+#do
+#	pandepth -i $sample.dd.bam -w 100000 -t $thread -o $sample
+#done
 
 # coverage rate
 awk '{print $1}' ${sampleInfo} | \
