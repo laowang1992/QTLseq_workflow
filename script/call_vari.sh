@@ -1,3 +1,4 @@
+ulimit -n 1024000
 # ½¨Ë÷Òı
 cd ${work_dir}/refseq
 samtools faidx ${genome}
@@ -48,14 +49,12 @@ elif [ $aligner = mem2 ];then
 fi
 # ÅÅĞò
 if [ $sort = sbb ];then
-	sambamba view --format=bam --with-header --sam-input --nthreads=${thread} --output-filename ${sample}.bam ${sample}.sam
-	sambamba sort --nthreads=${thread} --memory-limit=20GB --tmpdir=./ --out=${sample}.sort.bam ${sample}.bam
-	rm ${sample}.bam
+	sambamba view --format=bam --with-header --sam-input --nthreads=${thread} --output-filename ${sample}.bam ${sample}.sam && rm ${sample}.sam || echo "sam×ªbamÃüÁîÖ´ĞĞÊ§°Ü"
+	sambamba sort --nthreads=${thread} --memory-limit=20GB --tmpdir=./ --out=${sample}.sort.bam ${sample}.bam && rm ${sample}.bam || echo "sort bamÃüÁîÖ´ĞĞÊ§°Ü"
 	#rm -rf sambamba-pid*
 elif [ $sort = sts ];then
-	samtools sort --threads ${thread} --output-fmt BAM -o ${sample}.sort.bam ${sample}.sam
+	samtools sort --threads ${thread} --output-fmt BAM -o ${sample}.sort.bam ${sample}.sam && rm ${sample}.sam || echo "sort bamÃüÁîÖ´ĞĞÊ§°Ü"
 fi
-rm ${sample}.sam
 done
 
 cd ${work_dir}/01.Mapping
@@ -77,7 +76,6 @@ elif [ $rmdup = sbb ];then
 		sambamba markdup --remove-duplicates --nthreads=1 --tmpdir=./ %.sort.bam %.dd.bam
 		#rm -rf sambamba-pid*
 fi
-rm *sort.bam *sort.bam.bai
 
 cd ${work_dir}/02.SNP_indel
 # GATK HaplotypeCaller¶àÏß³Ì

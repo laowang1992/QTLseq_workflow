@@ -120,7 +120,7 @@ if (FALSE) {
 }
 
 # 读取数据和函数
-chr <- read_tsv("./chrom.txt", show_col_types = FALSE)
+chr <- read_tsv("./chrom.txt", col_names = c("CHROM", "LABEL"), show_col_types = FALSE)
 len <- read_tsv(file = "./ref.len", col_names = c("CHROM", "Len"), show_col_types = FALSE)
 source("./Support_functions.R")
 # 读取基因型等相关信息

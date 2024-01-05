@@ -4,7 +4,7 @@ library(tidyverse)
 
 getQTLseqCI <- function(df, outPrefix, popType, bulkSizeH, bulkSizeL, minDepth = 5, maxDepth = 150, repN = 10000){
   dltIndex_CI <- df %>% mutate(CI95upper = NA, CI95lower = NA, CI99upper = NA, CI99lower = NA)
-  #dltIndex_CI <- tibble(HB.DP = rep(minDepth:maxDepth, times = maxDepth-minDepth+1), 
+  #dltIndex_CI <- tibble(HB.DP = rep(minDepth:maxDepth, times = maxDepth-minDepth+1),
   #                      LB.DP = rep(minDepth:maxDepth, each = maxDepth-minDepth+1),
   #                      CI95upper = NA, CI95lower = NA, CI99upper = NA, CI99lower = NA)
   cat(date(), ", program start runing ...\n", sep = "")
@@ -17,7 +17,7 @@ getQTLseqCI <- function(df, outPrefix, popType, bulkSizeH, bulkSizeL, minDepth =
   for (i in 1:nrow(dltIndex_CI)) {
     depthH <- dltIndex_CI[i, 1][[1]]
     depthL <- dltIndex_CI[i, 2][[1]]
-    
+
     if (popType == "RIL") {
       PH <- rbinom(repN, bulkSizeH, 0.5) / bulkSizeH
       PL <- rbinom(repN, bulkSizeL, 0.5) / bulkSizeL
@@ -27,75 +27,75 @@ getQTLseqCI <- function(df, outPrefix, popType, bulkSizeH, bulkSizeL, minDepth =
       PH <- apply(rmultinom(repN, bulkSizeH, c(1, 2, 1)) * c(1, 0.5, 0) / bulkSizeH, 2, sum)
       PL <- apply(rmultinom(repN, bulkSizeL, c(1, 2, 1)) * c(1, 0.5, 0) / bulkSizeL, 2, sum)
     }
-    
+
     indexH <- rbinom(repN, depthH, PH) / depthH
     indexL <- rbinom(repN, depthL, PL) / depthL
     dltIndex <- indexH - indexL
-    
+
     dltIndex_CI[i, c("CI95upper", "CI95lower", "CI99upper", "CI99lower")] <- t(
-      c(quantile(dltIndex, 0.975), quantile(dltIndex, 0.025), 
+      c(quantile(dltIndex, 0.975), quantile(dltIndex, 0.025),
         quantile(dltIndex, 0.995), quantile(dltIndex, 0.005))
     )
-    
+
     # 打印进度条
     pb$tick()
   }
   cat(date(), ", finish, export data ...\n", sep = "")
-  
-  
-  df <- gather(dltIndex_CI, type, CI, -HB.DP, -LB.DP) %>% 
+
+
+  df <- gather(dltIndex_CI, type, CI, -HB.DP, -LB.DP) %>%
     mutate(level = if_else(str_detect(type, "95"), "95 CI", "99 CI"),
            direction = if_else(str_detect(type, "upper"), "Upper CI", "Lower CI"))
   df$direction <- factor(df$direction, levels = c("Upper CI", "Lower CI"))
-  P_CI <- ggplot(df, aes(x = HB.DP, y = LB.DP, fill = CI)) + 
-    geom_tile() + 
+  P_CI <- ggplot(df, aes(x = HB.DP, y = LB.DP, fill = CI)) +
+    geom_tile() +
     scale_x_continuous(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
     scale_fill_distiller(palette = "RdBu") +
-    labs(title = paste(outPrefix, "CI", 
-                       paste(paste("indH", bulkSizeH, sep = ""), 
-                             paste("indL", bulkSizeL, sep = ""), 
-                             popType, sep = "_"), 
-                       paste("Depth", minDepth, maxDepth, sep = "_"), 
+    labs(title = paste(outPrefix, "CI",
+                       paste(paste("indH", bulkSizeH, sep = ""),
+                             paste("indL", bulkSizeL, sep = ""),
+                             popType, sep = "_"),
+                       paste("Depth", minDepth, maxDepth, sep = "_"),
                        paste("Rep", repN, sep = "_"), sep = "."),
          fill = NULL) +
     facet_grid(direction ~ level) +
     theme_half_open() +
     theme(strip.background = element_rect(fill = "#90EE90"),
           plot.title = element_text(hjust = 0.5))
-  ggsave(P_CI, filename = paste(outPrefix, "QTLseqCI", 
-                                paste(paste("indH", bulkSizeH, sep = ""), 
-                                      paste("indL", bulkSizeL, sep = ""), 
-                                      popType, sep = "_"), 
-                                paste("Depth", minDepth, maxDepth, sep = "_"), 
+  ggsave(P_CI, filename = paste(outPrefix, "QTLseqCI",
+                                paste(paste("indH", bulkSizeH, sep = ""),
+                                      paste("indL", bulkSizeL, sep = ""),
+                                      popType, sep = "_"),
+                                paste("Depth", minDepth, maxDepth, sep = "_"),
                                 paste("Rep", repN, sep = "_"),
                                 "pdf", sep = "."),
          width = 6.5, height = 6)
-  ggsave(P_CI, filename = paste(outPrefix, "QTLseqCI", 
-                                paste(paste("indH", bulkSizeH, sep = ""), 
-                                      paste("indL", bulkSizeL, sep = ""), 
-                                      popType, sep = "_"), 
-                                paste("Depth", minDepth, maxDepth, sep = "_"), 
+  ggsave(P_CI, filename = paste(outPrefix, "QTLseqCI",
+                                paste(paste("indH", bulkSizeH, sep = ""),
+                                      paste("indL", bulkSizeL, sep = ""),
+                                      popType, sep = "_"),
+                                paste("Depth", minDepth, maxDepth, sep = "_"),
                                 paste("Rep", repN, sep = "_"),
                                 "png", sep = "."),
          width = 6.5, height = 6, units = "in", dpi = 500)
-  #save(dltIndex_CI, 
-  #     file = paste("QTLseqCI", 
-  #                  paste(paste("indH", bulkSizeH, sep = ""), 
-  #                        paste("indL", bulkSizeL, sep = ""), 
-  #                        popType, sep = "_"), 
-  #                  paste("Depth", minDepth, maxDepth, sep = "_"), 
+  #save(dltIndex_CI,
+  #     file = paste("QTLseqCI",
+  #                  paste(paste("indH", bulkSizeH, sep = ""),
+  #                        paste("indL", bulkSizeL, sep = ""),
+  #                        popType, sep = "_"),
+  #                  paste("Depth", minDepth, maxDepth, sep = "_"),
   #                  paste("Rep", repN, sep = "_"),
   #                  "RData", sep = "."))
   return(dltIndex_CI)
 }
 
 
-getQTL <- function(data, chr = "CHROM", pos = "POS", 
-                   index = "delta.index", nSNPs = "nSNPs", CI = 95, n = 10, 
+getQTL <- function(data, chr = "CHROM", pos = "POS",
+                   index = "delta.index", nSNPs = "nSNPs", CI = 95, n = 10,
                    export = TRUE, filename = "SignificantQTL.csv"){
   ## 整理格式
-  df <- data %>% 
+  df <- data %>%
     dplyr::select(chr = all_of(chr), pos = all_of(pos), index = all_of(index), nSNPs = all_of(nSNPs),
                   CIupper = all_of(paste("CI", CI, "upper", sep = "")),
                   CIlower = all_of(paste("CI", CI, "lower", sep = "")))
@@ -127,7 +127,7 @@ getQTL <- function(data, chr = "CHROM", pos = "POS",
       }
     }
   }
-  
+
   # Peak information
   interval <- interval %>% mutate(PeakPos = numeric(nrow(interval)), PeakDeltaIndex = numeric(nrow(interval)))
   for (i in seq_along(interval$CHROM)) {
@@ -148,10 +148,10 @@ getQTL <- function(data, chr = "CHROM", pos = "POS",
 
 
 
-plotIndex <- function(df, chr, len, CI=NA, nSNPs=NA, n=5, index, band = 0.02, 
-                      color=c("#4197d8","#f8c120", "#413496", "#495226", 
-                              "#d60b6f", "#e66519", "#d581b7", "#83d3ad", "#7c162c", "#26755d"), 
-                      ylim = NULL, ylab="Delta SNP index", size=1, axis.size=1, 
+plotIndex <- function(df, chr, len, CI=NA, nSNPs=NA, n=5, index, band = 0.02,
+                      color=c("#4197d8","#f8c120", "#413496", "#495226",
+                              "#d60b6f", "#e66519", "#d581b7", "#83d3ad", "#7c162c", "#26755d"),
+                      ylim = NULL, ylab="Delta SNP index", size=1, axis.size=1,
                       axis.lab.size=1, axis.title.size=1, type="p"){
   chr <- chr %>% mutate(COLOR = rep(color, len = nrow(chr)))
   len <- chr %>% left_join(len, by = "CHROM") %>% dplyr::select(CHROM, Len)
@@ -173,9 +173,9 @@ plotIndex <- function(df, chr, len, CI=NA, nSNPs=NA, n=5, index, band = 0.02,
       breaks <- addUp + len$Len/2
       #
       plot(x = df$POS, y = df$index, col = df$COLOR, type = "p", pch = 20, cex = size,
-           ylim = ylim, axes=FALSE, xlab = NA, ylab = ylab, font.lab = 2, 
+           ylim = ylim, axes=FALSE, xlab = NA, ylab = ylab, font.lab = 2,
            cex.lab = axis.title.size)
-      axis(side = 1, at = breaks, labels = chr$LABEL, lwd = axis.size, lwd.ticks = axis.size, 
+      axis(side = 1, at = breaks, labels = chr$LABEL, lwd = axis.size, lwd.ticks = axis.size,
            font = 2, cex.axis = axis.lab.size)
       axis(side = 2, las="2", lwd = axis.size, lwd.ticks = axis.size, font = 2,
            cex.axis = axis.lab.size)
@@ -188,9 +188,9 @@ plotIndex <- function(df, chr, len, CI=NA, nSNPs=NA, n=5, index, band = 0.02,
       # 坐标轴
       breaks <- addUp + len$Len/2
       #
-      plot(0, 0, xlim = c(0, sum(len$Len)+band*sum(len$Len)*(nrow(len)-1)), ylim = ylim, type = "n", 
+      plot(0, 0, xlim = c(0, sum(len$Len)+band*sum(len$Len)*(nrow(len)-1)), ylim = ylim, type = "n",
            axes = F, xlab = NA, ylab = ylab, font.lab = 2, cex.lab = axis.title.size)
-      axis(side = 1, at = breaks, labels = chr$LABEL, lwd = axis.size, lwd.ticks = axis.size, 
+      axis(side = 1, at = breaks, labels = chr$LABEL, lwd = axis.size, lwd.ticks = axis.size,
            font = 2, cex.axis = axis.lab.size)
       axis(side = 2, las="2", lwd = axis.size, lwd.ticks = axis.size, font = 2,
            cex.axis = axis.lab.size)
@@ -203,7 +203,7 @@ plotIndex <- function(df, chr, len, CI=NA, nSNPs=NA, n=5, index, band = 0.02,
     if (type == "p") {
       cat("here, CI and p\n")
       df <- chr %>% left_join(df, by = "CHROM") %>% left_join(len, by = "CHROM") %>%
-        dplyr::select(CHROM, LABEL, COLOR, POS, "index"=all_of(index), "nSNPs"=all_of(nSNPs), 
+        dplyr::select(CHROM, LABEL, COLOR, POS, "index"=all_of(index), "nSNPs"=all_of(nSNPs),
                       "CIupper" = all_of(paste(CI, "upper", sep = "")),
                       "CIlower" = all_of(paste(CI, "lower", sep = "")))
       x <- rep(addUp, table(df$CHROM))
@@ -213,7 +213,7 @@ plotIndex <- function(df, chr, len, CI=NA, nSNPs=NA, n=5, index, band = 0.02,
       #
       plot(x = df$POS, y = df$index, col = df$COLOR, type = "p", pch = 20, cex = size,
            ylim = ylim, axes=FALSE, xlab = NA, ylab = ylab, font.lab = 2, cex.lab = axis.title.size)
-      axis(side = 1, at = breaks, labels = chr$LABEL, lwd = axis.size, lwd.ticks = axis.size, 
+      axis(side = 1, at = breaks, labels = chr$LABEL, lwd = axis.size, lwd.ticks = axis.size,
            font = 2, cex.axis = axis.lab.size)
       axis(side = 2, las="2", lwd = axis.size, lwd.ticks = axis.size, font = 2,
            cex.axis = axis.lab.size)
@@ -225,7 +225,7 @@ plotIndex <- function(df, chr, len, CI=NA, nSNPs=NA, n=5, index, band = 0.02,
     } else if (type == "l") {
       cat("here, CI and l\n")
       df <- chr %>% left_join(df, by = "CHROM") %>% left_join(len, by = "CHROM") %>%
-        dplyr::select(CHROM, LABEL, COLOR, POS, "index"=all_of(index), "nSNPs"=all_of(nSNPs), 
+        dplyr::select(CHROM, LABEL, COLOR, POS, "index"=all_of(index), "nSNPs"=all_of(nSNPs),
                       "CIupper" = all_of(paste(CI, "upper", sep = "")),
                       "CIlower" = all_of(paste(CI, "lower", sep = "")))
       x <- rep(addUp, table(df$CHROM))
@@ -233,9 +233,9 @@ plotIndex <- function(df, chr, len, CI=NA, nSNPs=NA, n=5, index, band = 0.02,
       # 坐标轴
       breaks <- addUp + len$Len/2
       #
-      plot(0, 0, xlim = c(0, sum(len$Len)+band*sum(len$Len)*(nrow(len)-1)), ylim = ylim, type = "n", 
+      plot(0, 0, xlim = c(0, sum(len$Len)+band*sum(len$Len)*(nrow(len)-1)), ylim = ylim, type = "n",
            axes = F, xlab = NA, ylab = ylab, font.lab = 2, cex.lab = axis.title.size)
-      axis(side = 1, at = breaks, labels = chr$LABEL, lwd = axis.size, lwd.ticks = axis.size, 
+      axis(side = 1, at = breaks, labels = chr$LABEL, lwd = axis.size, lwd.ticks = axis.size,
            font = 2, cex.axis = axis.lab.size)
       axis(side = 2, las="2", lwd = axis.size, lwd.ticks = axis.size, font = 2,
            cex.axis = axis.lab.size)
@@ -253,44 +253,44 @@ plotTargetChrom <- function(df, CI = 95, minN = 0, outPrefix, chr, len){
   interval <- read_csv(file = paste(outPrefix, paste(CI, "CI", sep = ""), "csv", sep = "."), show_col_types = FALSE)
   if (nrow(interval) > 0) {
     for (i in unique(interval$CHROM)) {
-      d <- df %>% filter(CHROM == i, nSNPs >= minN) %>% 
-        dplyr::select(CHROM, POS = POS, CIupper = all_of(paste("CI", CI, "upper", sep = "")), 
-                      CIupper = all_of(paste("CI", CI, "upper", sep = "")), 
-                      CIlower = all_of(paste("CI", CI, "lower", sep = "")), 
+      d <- df %>% filter(CHROM == i, nSNPs >= minN) %>%
+        dplyr::select(CHROM, POS = POS,
+                      CIupper = all_of(paste("CI", CI, "upper", sep = "")),
+                      CIlower = all_of(paste("CI", CI, "lower", sep = "")),
                       delta.index, ED, ED4)
       inter <- interval %>% filter(CHROM == i) %>% left_join(chr, by = "CHROM")
       chrLen <- len$Len[len$CHROM == i]
       p_index <- ggplot() +
         geom_rect(data = inter, aes(xmin = Start, xmax = End, ymin = -Inf, ymax = Inf),fill = '#FF3300', color = "#FF3300") +
-        geom_line(data = d, aes(x = POS, y = CIupper), color = "gray60") + 
+        geom_line(data = d, aes(x = POS, y = CIupper), color = "gray60") +
         geom_line(data = d, aes(x = POS, y = CIlower), color = "gray60") +
         geom_line(data = d, aes(x = POS, y = delta.index), color = "blue") +
-        scale_x_continuous(limits = c(0, chrLen)) +
+        scale_x_continuous(limits = c(0, chrLen), labels = scales::comma_format(scale = 1e-6, suffix = "Mb")) +
         scale_y_continuous(limits = c(-1, 1)) +
-        geom_hline(aes(yintercept=0)) + 
+        geom_hline(aes(yintercept=0)) +
         labs(x = chr$LABEL[chr$CHROM == i], y = "Delta SNP index") +
         theme_half_open()
       ggsave(p_index, filename = paste(outPrefix, chr$LABEL[chr$CHROM == i], paste(CI, "CI", sep = ""), "png", sep = "."), height = 3.5, width = 4.5, dpi = 500)
       ggsave(p_index, filename = paste(outPrefix, chr$LABEL[chr$CHROM == i], paste(CI, "CI", sep = ""), "pdf", sep = "."), height = 3.5, width = 4.5)
-      
-      p_ed <- ggplot(d, aes(x = POS, y = ED)) + 
-        geom_line(color = "blue") + 
+
+      p_ed <- ggplot(d, aes(x = POS, y = ED)) +
+        geom_line(color = "blue") +
         scale_x_continuous(limits = c(0, chrLen)) +
         scale_y_continuous(limits = c(0, max(d$ED, na.rm = TRUE)*1.05)) +
         labs(x = chr$LABEL[chr$CHROM == i], y = "ED") +
         theme_half_open()
       ggsave(p_ed, filename = paste(outPrefix, chr$LABEL[chr$CHROM == i], "ED", "png", sep = "."), height = 3.5, width = 4.5, dpi = 500)
       ggsave(p_ed, filename = paste(outPrefix, chr$LABEL[chr$CHROM == i], "ED", "pdf", sep = "."), height = 3.5, width = 4.5)
-      
-      p_ed4 <- ggplot(d, aes(x = POS, y = ED4)) + 
-        geom_line(color = "blue") + 
+
+      p_ed4 <- ggplot(d, aes(x = POS, y = ED4)) +
+        geom_line(color = "blue") +
         scale_x_continuous(limits = c(0, chrLen)) +
         scale_y_continuous(limits = c(0, max(d$ED4, na.rm = TRUE))) +
         labs(x = chr$LABEL[chr$CHROM == i], y = bquote(ED^4)) +
         theme_half_open()
       ggsave(p_ed4, filename = paste(outPrefix, chr$LABEL[chr$CHROM == i], "ED4", "png", sep = "."), height = 3.5, width = 4.5, dpi = 500)
       ggsave(p_ed4, filename = paste(outPrefix, chr$LABEL[chr$CHROM == i], "ED4", "pdf", sep = "."), height = 3.5, width = 4.5)
-      
+
       print(paste(chr$LABEL[chr$CHROM == i], "has been done...", sep = " "))
     }
   }
@@ -338,7 +338,7 @@ slidingWindow <- function(df, winSize, winStep, groups, position, values, fun){
     wid[i, "N"] <- nrow(df_tmp)
     x <- apply(df_tmp[, values], 2, fun)
     wid[i, paste(values, fun, sep = "_")] <- t(x[values])
-    
+
     # 打印一个进度条
     ## 使用progress扩展包打印进度条
     pb$tick()
@@ -373,7 +373,7 @@ addUp <- function(df, len = NULL, group, pos, band = 0.01){
   breaks <- accu + len$Len/2
   gaps <- accu[-1] - sum(len$Len)*band/2
   labels <- names(accu)
-  
+
   for (p in pos) {
     dd <- df %>% select(group, p = all_of(p)) %>% mutate(p_addUp = 0)
     for (c in names(accu)) {
@@ -382,7 +382,7 @@ addUp <- function(df, len = NULL, group, pos, band = 0.01){
     colnames(dd) <- c("group", p, paste(p, "addUp", sep = "_"))
     df <- df %>% left_join(dd, by = c("group", p))
   }
-  
+
   colnames(df)[1] <- group
   df <- df %>% left_join(df_tmp, by = c(group, pos))
   outList <- list(df = df, breaks = breaks, labels = labels, gaps = gaps)

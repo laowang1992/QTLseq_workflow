@@ -1,4 +1,3 @@
-CHROM	LABEL
 scaffoldA01	A01
 scaffoldA02	A02
 scaffoldA03	A03

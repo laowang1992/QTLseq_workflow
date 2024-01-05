@@ -28,7 +28,7 @@ if (test) {
 }
 
 sample <- read_tsv(file = sampleInfo, col_names = F, show_col_types = FALSE) %>% pull(X1)
-chr <- read_tsv(file = chrInfo, show_col_types = FALSE)
+chr <- read_tsv(file = chrInfo, col_names = c("CHROM", "LABEL"), show_col_types = FALSE)
 
 chromInfo <- read_tsv(file = chrLen, col_names = F, show_col_types = FALSE) %>% 
   select(CHROM = X1, LEN = X2) %>% 
@@ -80,7 +80,7 @@ if (n <= 6 & n > 0) {
       scale_fill_manual(values = getPalette(nrow(chromInfo))) +
       labs(x = NULL, y = "Depth") +
       facet_grid(chr ~ .) +
-      theme_half_open() +
+      cowplot::theme_half_open() +
       theme(strip.text.y = element_text(angle = 0),
             strip.background = element_rect(color = NA, fill = NA),
             legend.position = "NULL")
