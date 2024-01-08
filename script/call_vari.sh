@@ -3,7 +3,7 @@ ulimit -n 1024000
 cd ${work_dir}/refseq
 samtools faidx ${genome}
 awk '{print $1"\t"$2}' ${genome}.fai > ref.len
-java -jar ${picard} CreateSequenceDictionary --REFERENCE ${genome} --OUTPUT ${genome/fa/dict}
+java -jar ${picard} CreateSequenceDictionary --REFERENCE ${genome} --OUTPUT ${genome%.*}.dict
 if [ $aligner = bowtie2 ];then
 	bowtie2-build ${genome} ${index}
 elif [ $aligner = mem ];then
