@@ -18,19 +18,19 @@ do
 	ln -s ../genome.famap ./
 	ln -s ../genome.hash ./
 	
-	bcftools view -R $work_dir/04.Annotation/$i/$i.INDELs.pos.txt \
-		-s $highParent,lowParent --force-samples \
-		-Oz -o ./$i.INDELs.vcf.gz --threads \
+	bcftools view -R $work_dir/04.Annotation/$outPrefix/$outPrefix.INDELs.pos.txt \
+		-s $highParent,$lowParent --force-samples \
+		-Oz -o ./$outPrefix.INDELs.vcf.gz --threads \
 		${thread} ${work_dir}/02.SNP_indel/$filename.filter.INDELs.vcf.gz
 	
-	bcftools annotate -I '%CHROM\_%POS' -x INFO,^FORMAT/GT ./$i.INDELs.vcf.gz | \
+	bcftools annotate -I '%CHROM\_%POS' -x INFO,^FORMAT/GT ./$outPrefix.INDELs.vcf.gz | \
 		grep -v "##" | \
-		sed 's/^#CHROM/CHROM/' > $filename.indels.txt
+		sed 's/^#CHROM/CHROM/' > $outPrefix.indels.txt
 	
 	# 提取indels上下游各250bp序列
-	perl extr_seq_for_indel_pri.pl --genome genome.fa --input $filename.indels.txt --output $filename.indelWithSEQ.txt
+	perl ../extr_seq_for_indel_pri.pl --genome genome.fa --input $outPrefix.indels.txt --output $outPrefix.indelWithSEQ.txt
 	# 整理成p3in格式
-	perl indel_p3in.pl --input $filename.indelWithSEQ.txt --output $filename.p3in \
+	perl ../indel_p3in.pl --input $outPrefix.indelWithSEQ.txt --output $outPrefix.p3in \
 		--config $primerConfig \
 		--minProdLen $minProdLen \
 		--maxProdLen $maxProdLen \
@@ -45,15 +45,13 @@ do
 		--primerNumReturn $primerNumReturn
 	
 	# 设计引物，每个位置设计3个
-	primer3_core -strict_tags ${filename}.p3in > ${filename}.p3out
+	primer3_core -strict_tags $outPrefix.p3in > $outPrefix.p3out
 	# e-PCR
-	perl epcr.pl ${filename}.p3out ${filename}.primer.txt
-	# mkxls.pl已经整合到epcr.pl这一步中
-	#perl mkxls.pl --input ${filename}.p3out --output ${filename}.primer.txt
+	perl ../epcr.pl $outPrefix.p3out $outPrefix.primer.txt
 	# merge
-	Rscript merge.R ${filename}.indels.filter.txt ${filename}.primer.txt
+	Rscript ../merge.R $outPrefix.indels.filter.txt $outPrefix.primer.txt
 	
 	# 删除中间文件
-	rm genome.fa genome.famap genome.hash ${filename}.p3* ${filename}.indelWithSEQ.txt ${filename}.indels.txt ${filename}.primer.txt
+	#rm genome.fa genome.famap genome.hash $outPrefix.p3* $outPrefix.indelWithSEQ.txt $outPrefix.indels.txt $outPrefix.primer.txt
 	cd ..
 done

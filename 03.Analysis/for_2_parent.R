@@ -273,6 +273,7 @@ export_figure <- function(data, outPrefix, chr, len, minN, highB, lowB, width, h
 }
 
 getQTL_and_exportFigure <- function(data, outPrefix, minN, chr, len){
+  data <- chr %>% select(-LABEL) %>% left_join(data, by = "CHROM")
   CI95 <- getQTL(data = data, CI = 95, n = minN, export = TRUE, filename = paste(outPrefix, "95CI.csv", sep = "."))
   CI99 <- getQTL(data = data, CI = 99, n = minN, export = TRUE, filename = paste(outPrefix, "99CI.csv", sep = "."))
 
