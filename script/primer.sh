@@ -49,7 +49,7 @@ do
 	# e-PCR
 	perl ../epcr.pl $outPrefix.p3out $outPrefix.primer.txt
 	# merge
-	Rscript ../merge.R $outPrefix.indels.filter.txt $outPrefix.primer.txt
+	Rscript ../merge.R $outPrefix.indels.txt $outPrefix.primer.txt
 	
 	# 删除中间文件
 	#rm genome.fa genome.famap genome.hash $outPrefix.p3* $outPrefix.indelWithSEQ.txt $outPrefix.indels.txt $outPrefix.primer.txt
