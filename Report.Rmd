@@ -60,7 +60,7 @@ if (aligner == "bwotie2") {
     mutate(`Mapped reads` = `Total reads` - `Unmapped reads`, 
            `Mapped rate` = `Mapped reads` / `Total reads`, 
            `Uniquely mapped rate` = `Uniquely mapped reads` / `Total reads`) %>% 
-    select(Sample, `Total reads`, `Mapped reads`, `Mapped rate`, `Uniquely mapped read`, `Uniquely mapped rate`)
+    select(Sample, `Total reads`, `Mapped reads`, `Mapped rate`, `Uniquely mapped reads`, `Uniquely mapped rate`)
 }
 write_csv(x = mapInfo, file = "./result/01.Mapping/align_stat.csv")
 
@@ -227,11 +227,11 @@ for (i in seq_along(qtlParm$outPrefix)) {
 - 10~13列：各个样本的基因型，0代表REF类型，1代表ALT类型，0/0和1/1代表纯合基因型，0/1代表杂合（注意excel表中的1月1日是代表1/1，是由于excel自动转换成日期格式造成）；
 - REF_lean、ALT_len：REF和ALT的长度；
 - DIFF：REF_lean-ALT_len的绝对值，代表不同材料扩增片段的长度差异，也就是垂直胶不同带型的差异，应根据具体实验设备和自己的习惯选择合适的大小；
-- PrimerL1~3、PrimerR1~3：每个indel的左右引物，共三对；
+- PrimerL1-3、PrimerR1-3：每个indel的左右引物，共三对；
 - Hit1-3：e-PCR结果，代表根据参考基因组预测的潜在结合位点个数，1代表特异性引物；
-- TmL1~3、TmR1-3：左右引物TM值；
-- GCL1~3、GCR1~3：左右引物GC含量；
-- Length1~3：每对引物扩增的片段长度，应根据自己习惯选择合适长度。
+- TmL1-3、TmR1-3：左右引物TM值；
+- GCL1-3、GCR1-3：左右引物GC含量；
+- Length1-3：每对引物扩增的片段长度，应根据自己习惯选择合适长度。
 
 
 # 参考文献 {-}
