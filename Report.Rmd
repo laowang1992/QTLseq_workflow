@@ -60,7 +60,7 @@ if (aligner == "bwotie2") {
     mutate(`Mapped reads` = `Total reads` - `Unmapped reads`, 
            `Mapped rate` = `Mapped reads` / `Total reads`, 
            `Uniquely mapped rate` = `Uniquely mapped reads` / `Total reads`) %>% 
-    select(Sample, `Total reads`, `Mapped read`, `Mapped rate`, `Uniquely mapped read`, `Uniquely mapped rate`)
+    select(Sample, `Total reads`, `Mapped reads`, `Mapped rate`, `Uniquely mapped read`, `Uniquely mapped rate`)
 }
 write_csv(x = mapInfo, file = "./result/01.Mapping/align_stat.csv")
 
