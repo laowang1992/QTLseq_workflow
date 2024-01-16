@@ -1,0 +1,250 @@
+---
+title: "茄子（*Solanum melongena* L.）QTL-seq分析"
+author: "老王 <wangpf0608@126.com>"
+date: "`r Sys.time()`"
+output: 
+  html_document:
+    self_contained: false
+    lib_dir: libs
+    theme: paper
+    toc: True
+    number_sections: True
+    toc_float:
+      collapsed: true
+    df_print: paged
+---
+
+```{R global, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  fig.align = "center"
+)
+library(tidyverse)
+prefix <- "BSA"
+aligner <- "bwa-mem2"  # 
+genome <- "茄子HQ-1315"
+genome_ref <- "Wei, Q., Wang, J., Wang, W., Hu, T., Hu, H., & Bao, C. (2020). A high-quality chromosome-level genome assembly reveals genetics for important traits in eggplant. Horticulture research, 7(1), 153. https://doi.org/10.1038/s41438-020-00391-0"
+genome_url <- "http://www.eggplant-hq.cn/Eggplant/home/index"
+qtlParm <- read_csv(file = "./03.Analysis/Parameter.csv")
+```
+
+```{R include=FALSE}
+dir.create(path = "./result/00.data/00.raw_data/QC", showWarnings = FALSE, recursive = TRUE)
+dir.create(path = "./result/00.data/01.clean_data/QC", showWarnings = FALSE, recursive = TRUE)
+dir.create(path = "./result/01.Mapping", showWarnings = FALSE, recursive = TRUE)
+dir.create(path = "./result/02.SNP_indel", showWarnings = FALSE, recursive = TRUE)
+dir.create(path = "./result/03.Analysis", showWarnings = FALSE, recursive = TRUE)
+dir.create(path = "./result/04.Annotation", showWarnings = FALSE, recursive = TRUE)
+dir.create(path = "./result/05.Primer", showWarnings = FALSE, recursive = TRUE)
+```
+
+```{R read_info, include=FALSE}
+sampleInfo <- read_tsv(file = "./00.data/samples.txt", col_names = c("Sample", "Phenotype", "fq_1", "fq_2")) %>% 
+  mutate(fq_1 = basename(fq_1), fq_2 = basename(fq_2))
+write_csv(x = sampleInfo, file = "./result/00.data/sampleInfo.csv")
+
+file.copy(from = paste("./00.data/00.raw_data/QC/", str_replace(string = sampleInfo$fq_1, pattern = ".fq$|.fq.gz$|.fastq$|.fastq.gz$", replacement = "_fastqc.html"), sep = ""), to = paste("./result/00.data/00.raw_data/QC/", str_replace(string = sampleInfo$fq_1, pattern = ".fq$|.fq.gz$|.fastq$|.fastq.gz$", replacement = "_fastqc.html"), sep = ""))
+file.copy(from = paste("./00.data/00.raw_data/QC/", str_replace(string = sampleInfo$fq_2, pattern = ".fq$|.fq.gz$|.fastq$|.fastq.gz$", replacement = "_fastqc.html"), sep = ""), to = paste("./result/00.data/00.raw_data/QC/", str_replace(string = sampleInfo$fq_2, pattern = ".fq$|.fq.gz$|.fastq$|.fastq.gz$", replacement = "_fastqc.html"), sep = ""))
+file.copy(from = paste("./00.data/01.clean_data/QC/", str_replace(string = sampleInfo$Sample, pattern = "$", replacement = "_1.clean_fastqc.html"), sep = ""), to = paste("./result/00.data/01.clean_data/QC/", str_replace(string = sampleInfo$Sample, pattern = "$", replacement = "_1.clean_fastqc.html"), sep = ""))
+file.copy(from = paste("./00.data/01.clean_data/QC/", str_replace(string = sampleInfo$Sample, pattern = "$", replacement = "_2.clean_fastqc.html"), sep = ""), to = paste("./result/00.data/01.clean_data/QC/", str_replace(string = sampleInfo$Sample, pattern = "$", replacement = "_2.clean_fastqc.html"), sep = ""))
+
+dataInfo <- read_tsv(file = "./00.data/data_stat.txt")
+write_csv(x = dataInfo, file = "./result/00.data/data_stat.csv")
+
+if (aligner == "bwotie2") {
+  mapInfo <- read_csv(file = "./01.Mapping/align_stat.csv")
+} else {
+  mapInfo <- read_csv(file = "./01.Mapping/align_stat.csv")
+  mapInfo <- dataInfo %>% select(Sample = sample, `Total reads` = total_reads.clean) %>% 
+    left_join(mapInfo, by = "Sample") %>% 
+    mutate(`Mapped reads` = `Total reads` - `Unmapped reads`, 
+           `Mapped rate` = `Mapped reads` / `Total reads`, 
+           `Uniquely mapped rate` = `Uniquely mapped reads` / `Total reads`) %>% 
+    select(Sample, `Total reads`, `Mapped read`, `Mapped rate`, `Uniquely mapped read`, `Uniquely mapped rate`)
+}
+write_csv(x = mapInfo, file = "./result/01.Mapping/align_stat.csv")
+
+covRate <- read_tsv(file = "./01.Mapping/cov_stat.txt")
+write_csv(x = covRate, file = "./result/01.Mapping/cov_stat.csv")
+
+file.copy(from = "./01.Mapping/CoverageDepth.pdf", to = "./result/01.Mapping/CoverageDepth.pdf")
+file.copy(from = "./01.Mapping/CoverageDepth.png", to = "./result/01.Mapping/CoverageDepth.png")
+
+file.copy(from = paste0("./02.SNP_indel/", prefix, ".filter.INDELs.vcf.gz"), to = paste0("./result/02.SNP_indel/", prefix, ".filter.INDELs.vcf.gz"))
+file.copy(from = paste0("./02.SNP_indel/", prefix, ".filter.INDELs.vcf.gz.tbi"), to = paste0("./result/02.SNP_indel/", prefix, ".filter.INDELs.vcf.gz.tbi"))
+file.copy(from = paste0("./02.SNP_indel/", prefix, ".filter.SNPs.vcf.gz"), to = paste0("./result/02.SNP_indel/", prefix, ".filter.SNPs.vcf.gz"))
+file.copy(from = paste0("./02.SNP_indel/", prefix, ".filter.SNPs.vcf.gz.tbi"), to = paste0("./result/02.SNP_indel/", prefix, ".filter.SNPs.vcf.gz.tbi"))
+
+file.copy(from = paste("./02.SNP_indel/", prefix, ".flt.report.html"), to = paste("./result/02.SNP_indel/", prefix, ".report.html", sep = ""))
+```
+
+# 样本信息
+一共有`r nrow(sampleInfo)`个样本，样本名称、表型和测序数据名称如下：
+```{R}
+DT::datatable(sampleInfo)
+```
+
+# QTL-seq原理
+QTL-seq[^1]是一种将Bulked‐segregant analysis (BSA)[^2] [^3]和高通量测序相结合，快速定位QTL的方法。目标性状有差异的双亲构建的分离群体中分别选取极端表型个体进行等量混合构建两个极端表型bulked DNA pool并进行测序。随后进行变异分析筛选出双亲间SNP位点并分别计算两个bulked DNA pool中每个SNP位点上某一亲本基因型read覆盖深度占该位点总read深度的比值，即SNP index，通过两个bulked DNA pool的SNP index相减即得到ΔSNP index。在基因组所有区域中，目标基因及其连锁的区域由于根据表型受到相反的选择在两个bulked DNA pool中表现出不同的趋势，因此ΔSNP index会显著偏离0附近；另一方面，于目标形状无关的区域则两个bulked DNA pool则表现为相似的变化趋势，因此ΔSNP index会在0附近波动。
+
+```{r, fig.cap="QTL-seq原理", fig.align='center'}
+knitr::include_graphics("./image/QTLseq原理.png")
+```
+
+# 分析流程
+QTL-seq分析流程如下如：
+
+```{r, fig.cap="QTL-seq分析流程", fig.align='center'}
+knitr::include_graphics("./image/QTLseq流程.png")
+```
+
+## 取样、提取DNA、建库和测序
+选取分离群体中极端表型个体各30-50株以及双亲取幼嫩组织，分别提取DNA并将分离群体极端表型个体按照等量原则混合构建bulked DNA pools，然后进行建库和高通量测序 (混池DNA深度一般与单株个数相同) (具体流程应参考实验设计以及公司测序报告)。
+
+## 数据过滤
+使用fastp[^4] (version: 0.20.0) 对raw data进行过滤得到clean data。统计过滤前后total bases、total reads、Q30、Q20、GC content以及有效数据比率 (data_stat.csv/txt)，同时使用FastQC (version: 0.11.9) 对过滤前后的数据进行质量评估 (./result/00.data/00.raw_data/QC/sample_fastqc.html ./result/00.data/01.clean_data/QC/sample_fastqc.html)。
+
+## 比对到参考基因组
+使用`r aligner`[^5] (version: `r if (aligner=="bwa") {"0.7.17-r1188"} else if (aligner=="bwa-mem2") {"2.2.1"} else if (aligner == "bowtie2") {"2.4.5"}`) 软件将clean read比对到`r genome`参考基因组[^6]，得到SAM (Sequence Alignment/Map) 格式文件并对比对结果进行统计 (./result/01.Mapping/align_stat.csv)，随后使用sambamba[^7] (version: 0.8.2) 软件对比对结果 (SAM文件) 转换为BAM (Binary Alignment/Map) 格式文件[^8]，并按照染色体和位置排序、去除建库过程中产生的PCR重复，然后统计样本基因组覆盖率 (./result/01.Mapping/cov_stat.csv)。
+
+## 变异分析
+变异分析使用Genome Analysis Toolkit，GATK[^9] (version: 3.8-0-ge9d806836) 完成，首先使用GATK的HaplotypeCaller功能对样本单独分析再使用CombineGVCFs功能合并，随后使用GenotypeGVCFs功能得到SNP和INDEL信息，最后使用VariantFiltration功能过滤原始的变异位点的到可靠的变异信息。
+
+## QTL-seq分析
+这里使用R包easyQTLseq[^10]进行QTL-seq分析，具体流程如下：
+
+在有双亲基因型信息 (重测序数据或参考基因组) 的情况下，我们筛选亲本内纯合、亲本间不同 (即：aa × bb) 的Single Nucleotide Polymorphism (SNP) 位点进行QTL-seq分析。首先计算两个混池中突变表型亲本类型reads的覆盖深度占总覆盖深度的比例，即SNP index，同时删除两个混池中SNP index同时小于0.3或大于0.7的SNP，然后突变表型混池的SNP index减去野生型表型混池的SNP index得到delta SNP index。置信区间以没有QTL为零假设，按照给定混池个体数和覆盖深度进行10,000模拟得到。同时计算欧氏距离 (Euclidean Distance, ED) 及其四次方 (ED^4^)。
+
+在没有双亲基因型信息的情况下，筛选有多态性的 SNP 位点。计算不同碱基覆盖深度占该位点总深度的比例，去除不同碱基比例同时小于0.3或大于0.7的SNP，并计算欧氏距离 (Euclidean Distance, ED) 及其四次方 (ED^4^)。
+$$
+ED=\sqrt{(A_{mut}-A_{wt})^2+(C_{mut}-C_{wt})^2+(G_{mut}-G_{wt})^2+(T_{mut}-T_{wt})^2}
+$$
+随后我们对ΔSNP-index和ED值按滑窗统计的方法进行平滑处理，并按照染色体位置分布绘图。
+
+## 变异注释
+为促进后续候选基因挖掘，我们使用ANNOVAR[^11]对QTL-seq分析中的SNP位点以及相同标准筛选的 Insertion/Deletion (InDel) 位点进行注释，鉴定变异位点所处位置 (intergenic、upstream、downstream、UTR5、UTR3、intronic、splicing或exonic) 以及对蛋白编码基因的影响 (synonymous、nonsynonymous、stopgain、stoploss、frameshift或nonframeshift)。
+
+## 引物设计
+为进行后续精细定位，我们根据上述筛选的InDel位点，使用primer3[^12] [^13]软件批量设计引物，并且使用e-PCR (version: 2.3.12) 进行特异性检测。
+
+# 分析结果
+## 数据过滤
+对raw data过滤后得到clean data，结果统计如下（./result/00.data/data_stat.csv）：
+```{R}
+DT::datatable(dataInfo)
+```
+
+## 比对结果
+将过滤后得到的clean read比对到参考基因组上并统计比对信息，比对率如下表：
+```{R}
+DT::datatable(mapInfo)
+```
+
+覆盖度统计如下表：
+
+```{R echo = FALSE}
+DT::datatable(covRate)
+```
+
+各个材料覆盖深度如下图：
+
+```{r, fig.cap="各样本覆盖深度图", out.width="80%"}
+knitr::include_graphics("./result/01.Mapping/CoverageDepth.png")
+```
+
+## 变异检测
+经过变异检测得到SNP和InDel信息，并以Variant Call Format (VCF) Version 4.2格式保存。变异检测结果统计信息见[./result/02.SNP_INDEL/`r prefix`.report.html](./result/02.SNP_INDEL/`r prefix`.report.html)。通过质控的SNP和InDel信息文件为./result/02.SNP_INDEL/`r prefix`.filter.SNPs.vcf.gz和./result/02.SNP_INDEL/`r prefix`.filter.INDELs.vcf.gz。
+
+## QTL-seq分析 {.tabset .tabset-fade .tabset-pills}
+```{r, results='asis'}
+for (i in seq_along(qtlParm$outPrefix)) {
+  dir.create(path = paste("./result/03.Analysis/", qtlParm$outPrefix[i], sep = ""), showWarnings = FALSE, recursive = TRUE)
+  # 设置source文件夹和target文件夹的路径
+  folder_source <- paste("./03.Analysis/", qtlParm$outPrefix[i], sep = "")
+  folder_target <- paste("./result/03.Analysis/", qtlParm$outPrefix[i], sep = "")
+  # 获取A文件夹中以"outPrefix"开头且以".png|pdf|csv"为后缀的文件列表
+  file_list <- list.files(path = folder_source, pattern = paste("^", qtlParm$outPrefix[1], ".*\\.(csv|png|pdf)$", sep = ""))
+  # 循环拷贝文件到B文件夹
+  for (file_name in file_list) {
+    source_file <- file.path(folder_source, file_name)
+    target_file <- file.path(folder_target, file_name)
+    file.copy(from = source_file, to = target_file, overwrite = FALSE)  # 如果要覆盖目标文件，请将overwrite参数设置为TRUE
+  }
+  cat("### ", qtlParm$outPrefix[i], " {-}\n", sep = "")
+  cat("根据变异检测结果进一步筛选有多态性的SNP标记用于QTL-seq分析。SNP在各染色体上的分布如下图：\n\n", "<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".SNP_distribution_histogram.png' width='80%'>\n\n", sep = "")
+  if (file.exists(paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".95CI.csv", sep = ""))) {
+    CI95 <- read_csv(file = paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".95CI.csv", sep = ""), show_col_types = FALSE)
+    CI99 <- read_csv(file = paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".99CI.csv", sep = ""), show_col_types = FALSE)
+    cat("按照95%的置信区间，总共鉴定到 ", nrow(CI95), " 个QTL，按照99%的置信区间，总共鉴定到 ", nrow(CI99), " 个QTL。两个Bulk pool的SNP-index值和delta SNP-index值如下图：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".", qtlParm$highBulk[i], ".SNP_index.line.png'>\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".", qtlParm$lowBulk[i], ".SNP_index.line.png'>\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".delta_SNP_index.99CI.line.png'>\n\n", sep = "")
+  } else {
+    cat("按照95%或99%的置信区间，并未检测到QTL。\n\n")
+  }
+}
+```
+
+## 变异注释 {.tabset .tabset-fade .tabset-pills}
+```{r, results='asis'}
+for (i in seq_along(qtlParm$outPrefix)) {
+  dir.create(path = paste("./result/04.Annotation/", qtlParm$outPrefix[i], sep = ""), showWarnings = FALSE, recursive = TRUE)
+  # 设置source文件夹和target文件夹的路径
+  folder_source <- paste("./04.Annotation/", qtlParm$outPrefix[i], sep = "")
+  folder_target <- paste("./result/04.Annotation/", qtlParm$outPrefix[i], sep = "")
+  # 获取A文件夹中以"outPrefix"开头且以".png|pdf|csv"为后缀的文件列表
+  file_list <- list.files(path = folder_source, pattern = paste("^", qtlParm$outPrefix[1], ".*\\.(csv|png|pdf|exonic_variant_function|variant_function)$", sep = ""))
+  # 循环拷贝文件到B文件夹
+  for (file_name in file_list) {
+    source_file <- file.path(folder_source, file_name)
+    target_file <- file.path(folder_target, file_name)
+    if (endsWith(file_name, "exonic_variant_function") | endsWith(file_name, "variant_function")) {
+      anno <- read_tsv(file = source_file, col_names = FALSE, show_col_types = FALSE)
+      write_tsv(x = anno, file = str_replace(string = target_file, pattern = "$", replacement = ".xls"), col_names = FALSE)
+    } else {
+      file.copy(from = source_file, to = target_file, overwrite = FALSE)  # 如果要覆盖目标文件，请将overwrite参数设置为TRUE
+    }
+  }
+  cat("### ", qtlParm$outPrefix[i], " {.tabset .tabset-fade .tabset-pills -}\n我们对SNP和INDEL进行注释，标注了变异位点在基因组上的位置（intergenic、upstream&downstream、UTR、exonic、intronic或splicing）以及对编码的氨基酸序列的影响，并且对注释结果进行统计\n\n", sep = "")
+  cat("#### SNP {-}\n对SNP位点所处的基因组位置进行统计，并且对影响氨基酸序列的SNP进行分类，结果如下：\n\n<img src='./result/04.Annotation/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".SNPs.distribution.png' width='50%'><img src='./result/04.Annotation/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".SNPs.anno.exonic_variant_function.png' width='50%'>\n\n", sep = "")
+  cat("#### INDEL {-}\n对INDEL位点所处的基因组位置进行统计，并且对影响氨基酸序列的INDEL进行分类，结果如下：\n\n<img src='./result/04.Annotation/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".INDELs.distribution.png' width='50%'><img src='./result/04.Annotation/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".INDELs.anno.exonic_variant_function.png' width='50%'>\n\n", sep = "")
+}
+```
+
+## 引物设计
+```{R include=FALSE}
+for (i in seq_along(qtlParm$outPrefix)) {
+  dir.create(path = paste0("./result/05.Primer/", qtlParm$outPrefix[i]), showWarnings = FALSE, recursive = TRUE)
+  file.copy(from = paste0("./05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".primer.csv"), 
+            to = paste0("./result/05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".primer.csv"), overwrite = FALSE)  # 如果要覆盖目标文件，请将overwrite参数设置为TRUE
+}
+```
+
+根据双亲间差异的INDEL位点（aa × bb）设计引物并进行e-PCR检测。在选择引物时应根据对应亲本基因型，并选择扩增片段长度差异大小合适的引物。同时应注意，引物设计和e-PCR都是根据参考基因组进行的，其真实情况因不同亲本而有差异，因此仍需进行PAGE电泳验证。
+
+引物设计结果说明：
+
+- CHROM、POS：引物所在染色体以及位置；
+- REF、ALT：参考基因组和变异类型；
+- QUAL：变异可信度，越高越好；
+- 10~13列：各个样本的基因型，0代表REF类型，1代表ALT类型，0/0和1/1代表纯合基因型，0/1代表杂合（注意excel表中的1月1日是代表1/1，是由于excel自动转换成日期格式造成）；
+- REF_lean、ALT_len：REF和ALT的长度；
+- DIFF：REF_lean-ALT_len的绝对值，代表不同材料扩增片段的长度差异，也就是垂直胶不同带型的差异，应根据具体实验设备和自己的习惯选择合适的大小；
+- PrimerL1~3、PrimerR1~3：每个indel的左右引物，共三对；
+- Hit1-3：e-PCR结果，代表根据参考基因组预测的潜在结合位点个数，1代表特异性引物；
+- TmL1~3、TmR1-3：左右引物TM值；
+- GCL1~3、GCR1~3：左右引物GC含量；
+- Length1~3：每对引物扩增的片段长度，应根据自己习惯选择合适长度。
+
+
+# 参考文献 {-}
+[^1]: Takagi, H., Abe, A., Yoshida, K., Kosugi, S., Natsume, S., Mitsuoka, C., Uemura, A., Utsushi, H., Tamiru, M., Takuno, S., Innan, H., Cano, L. M., Kamoun, S., & Terauchi, R. (2013). QTL-seq: rapid mapping of quantitative trait loci in rice by whole genome resequencing of DNA from two bulked populations. The Plant journal : for cell and molecular biology, 74(1), 174–183. https://doi.org/10.1111/tpj.12105
+[^2]: Giovannoni, J. J., Wing, R. A., Ganal, M. W., & Tanksley, S. D. (1991). Isolation of molecular markers from specific chromosomal intervals using DNA pools from existing mapping populations. Nucleic acids research, 19(23), 6553–6558. https://doi.org/10.1093/nar/19.23.6553
+[^3]: Michelmore, R. W., Paran, I., & Kesseli, R. V. (1991). Identification of markers linked to disease-resistance genes by bulked segregant analysis: a rapid method to detect markers in specific genomic regions by using segregating populations. Proceedings of the National Academy of Sciences of the United States of America, 88(21), 9828–9832. https://doi.org/10.1073/pnas.88.21.9828
+[^4]: Chen, S., Zhou, Y., Chen, Y., & Gu, J. (2018). fastp: an ultra-fast all-in-one FASTQ preprocessor. Bioinformatics (Oxford, England), 34(17), i884–i890. https://doi.org/10.1093/bioinformatics/bty560
+[^5]: Langmead, B., & Salzberg, S. L. (2012). Fast gapped-read alignment with Bowtie 2. Nature methods, 9(4), 357–359. https://doi.org/10.1038/nmeth.1923
+[^6]: `r genome_ref`
+[^7]: Tarasov, A., Vilella, A. J., Cuppen, E., Nijman, I. J., & Prins, P. (2015). Sambamba: fast processing of NGS alignment formats. Bioinformatics (Oxford, England), 31(12), 2032–2034. https://doi.org/10.1093/bioinformatics/btv098
+[^8]: Li, H., Handsaker, B., Wysoker, A., Fennell, T., Ruan, J., Homer, N., Marth, G., Abecasis, G., Durbin, R., & 1000 Genome Project Data Processing Subgroup (2009). The Sequence Alignment/Map format and SAMtools. Bioinformatics (Oxford, England), 25(16), 2078–2079. https://doi.org/10.1093/bioinformatics/btp352
+[^9]: McKenna, A., Hanna, M., Banks, E., Sivachenko, A., Cibulskis, K., Kernytsky, A., Garimella, K., Altshuler, D., Gabriel, S., Daly, M., & DePristo, M. A. (2010). The Genome Analysis Toolkit: a MapReduce framework for analyzing next-generation DNA sequencing data. Genome research, 20(9), 1297–1303. https://doi.org/10.1101/gr.107524.110
+[^10]: Wang, P. (2023). easyQTLseq: A R Package for QTLseq Analysis. https://github.com/laowang1992/easyQTLseq.git
+[^11]: Wang, K., Li, M., & Hakonarson, H. (2010). ANNOVAR: functional annotation of genetic variants from high-throughput sequencing data. Nucleic acids research, 38(16), e164. https://doi.org/10.1093/nar/gkq603
+[^12]: Untergasser, A., Cutcutache, I., Koressaar, T., Ye, J., Faircloth, B. C., Remm, M., & Rozen, S. G. (2012). Primer3--new capabilities and interfaces. Nucleic acids research, 40(15), e115. https://doi.org/10.1093/nar/gks596
+[^13]: Koressaar, T., & Remm, M. (2007). Enhancements and modifications of primer design program Primer3. Bioinformatics (Oxford, England), 23(10), 1289–1291. https://doi.org/10.1093/bioinformatics/btm091

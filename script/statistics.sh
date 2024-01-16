@@ -20,15 +20,15 @@ done
 Rscript CoverageStatistic.R --sampleInfo ../00.data/samples.txt --chrInfo ../refseq/chrom.txt --chrLen ../refseq/ref.len
 # align rate
 if [ $aligner = bowtie2 ];then
-	echo -e "Sample,Total read,Mapping read,Mapping rate,Unique mapping read,Unique mapping rate" > align_stat.csv
+	echo -e "Sample,Total reads,Mapped reads,Mapped rate,Uniquely mapped reads,Uniquely mapped rate" > align_stat.csv
 	for i in $(cut -f1 ${sampleInfo}); do perl alignStat.pl $i; done >> align_stat.csv
 else
-	echo "Sample,Mapping read,Unique mapping read" > align_stat.csv
+	echo "Sample,Unmapped reads,Uniquely mapped reads" > align_stat.csv
 	for i in $(cut -f1 ${sampleInfo})
 	do
-		mapping_reads=$(samtools view -c $i.sort.bam)
+		unmapped_reads=$(samtools idxstats $i.sort.bam | awk -F'\t' '{sum += $4} END {print sum}')
 		unique_reads=$(samtools view -q 60 -c $i.sort.bam)
-		echo "$i,$mapping_reads,$unique_reads" >> align_stat.csv
+		echo "$i,$unmapped_reads,$unique_reads" >> align_stat.csv
 	done
 fi
 
