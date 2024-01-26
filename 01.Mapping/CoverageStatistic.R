@@ -41,10 +41,12 @@ chromInfo <- read_tsv(file = chrLen, col_names = F, show_col_types = FALSE) %>%
   mutate(Start = 0) %>% 
   select(Chr, Name, Start, End)
 
+# median
 mid <- 0
 for (sample in samples) {
   subdf <- read_tsv(file = paste(sample, "win.stat.gz", sep = "."), col_names = T, show_col_types = FALSE, comment = "##") %>% 
     mutate(Sample = sample) %>% rename(Chr = `#Chr`)
+  subdf <- chr %>% select(Chr) %>% left_join(subdf, by = "Chr")
   if (mid < median(subdf$MeanDepth)) {
     mid <- median(subdf$MeanDepth)
   }
