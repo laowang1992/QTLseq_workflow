@@ -71,19 +71,16 @@ if (argv$createParameter) {
                           minHBdp = argv$minHBdp, minLBdp = argv$minLBdp, 
                           winSize = argv$winSize, winStep = argv$winStep, minN = argv$minN, 
                           width = argv$width, height = argv$height
-                          )
+  )
   write.csv(x = parameter, file = "Parameter.csv", na = "", row.names = F)
   quit(save = "no")
 }
 
 library(tidyverse)
-#library(QTLseqr)
-#library(windowscanr)
 library(cowplot)
-#library(CMplot)
 library(ggsci)
 library(RColorBrewer)
-
+library(easyQTLseq)
 
 if (FALSE) {
   ## file name
@@ -108,7 +105,7 @@ if (FALSE) {
   minLPdp <- 6
   minHBdp <- 6
   minLBdp <- 6
-
+  
   ## sliding window parameter
   winSize <- 2000000
   winStep <- 200000
@@ -120,11 +117,10 @@ if (FALSE) {
 }
 
 # 读取数据和函数
-chr <- read_tsv("./chrom.txt", col_names = c("CHROM", "LABEL"), show_col_types = FALSE)
-len <- read_tsv(file = "./ref.len", col_names = c("CHROM", "Len"), show_col_types = FALSE)
-source("./Support_functions.R")
+chr <- read_tsv("./chrom.txt", col_names = c("CHROM", "LABEL"), col_types = cols(CHROM = "c"), show_col_types = FALSE)
+len <- read_tsv(file = "./ref.len", col_names = c("CHROM", "Len"), col_types = cols(CHROM = "c", Len = "d"), show_col_types = FALSE)
 # 读取基因型等相关信息
-data <- read_tsv(file = filename, show_col_types = FALSE)
+data <- read_tsv(file = filename, col_types = cols(CHROM = "c"), show_col_types = FALSE)
 # 当前目录
 wd <- getwd()
 # 
@@ -136,7 +132,7 @@ if (is.na(argv$parameter)) {
                           minHPdp = argv$minHPdp, minLPdp = argv$minLPdp, minHBdp = argv$minHBdp, minLBdp = argv$minLBdp, 
                           winSize = argv$winSize, winStep = argv$winStep, minN = argv$minN, 
                           width = argv$width, height = argv$height
-                          )
+  )
 } else {
   cat("Get parameters from parameter csv file.\n")
   parameter <- read.csv(argv$parameter, header = T)
@@ -176,21 +172,17 @@ for (i in seq_along(parameter[,1])) {
   if (!is.na(highP) && paste(highP, "GT", sep = ".") %in% colnames(data) && 
       !is.na(lowP) && paste(lowP, "GT", sep = ".") %in% colnames(data)) {
     cat("There if 2 parents\n")
-    source("./for_2_parent.R")
+    x <- select_sample_and_SNP(data = data, highP = highP, lowP = lowP, highB = highB, lowB = lowB, popType = popType, bulkSize = c(bulkSizeH, bulkSizeL), minGQ = minGQ, chrLen = len)
   } else if (!is.na(highP) && paste(highP, "GT", sep = ".") %in% colnames(data)) {
     cat("There is only", highP, "parent\n")
-    source("./for_1_parent.R")
+    x <- select_sample_and_SNP(data = data, highP = highP, highB = highB, lowB = lowB, popType = popType, bulkSize = c(bulkSizeH, bulkSizeL), minGQ = minGQ, chrLen = len)
+    #source("./for_1_parent.R")
   } else if (!is.na(lowP) && paste(lowP, "GT", sep = ".") %in% colnames(data)) {
     cat("There is only", lowP, "parent\n")
-    tmp <- highP; highP <- lowP; lowP <- tmp
-    tmp <- highB; highB <- lowB; lowB <- tmp
-    tmp <- bulkSizeH; bulkSizeH <- bulkSizeL; bulkSizeL <- tmp
-    tmp <- minHPdp; minHPdp <- minLPdp; minLPdp <- tmp
-    tmp <- minHBdp; minHBdp <- minLBdp; minLBdp <- tmp
-    source("./for_1_parent.R")
+    x <- select_sample_and_SNP(data = data, lowP = lowP, highB = highB, lowB = lowB, popType = popType, bulkSize = c(bulkSizeH, bulkSizeL), minGQ = minGQ, chrLen = len)
   } else {
     cat("There is 0 parent\n")
-    source("./for_0_parent.R")
+    x <- select_sample_and_SNP(data = data, highB = highB, lowB = lowB, popType = popType, bulkSize = c(bulkSizeH, bulkSizeL), minGQ = minGQ, chrLen = len)
   }
   # 目录设置
   dir.create(path = outPrefix, showWarnings = FALSE)
@@ -200,19 +192,37 @@ for (i in seq_along(parameter[,1])) {
   }
   setwd(outPrefix)
   write.table(x = parameter[i,], paste(outPrefix, "parameter.txt", sep = "."), quote = F, sep = "\t", row.names = F)
-  df <- selectSample_and_filterGT(data = data, highP = highP, lowP = lowP, highB = highB, lowB = lowB, minGQ = minGQ)
-  depth_statistics(data = df, outPrefix = outPrefix, highP = highP, lowP = lowP, highB = highB, lowB = lowB)
-  final_dp <- filterDP(data = df, minHPdp = minHPdp, minLPdp = minLPdp, minHBdp = minHBdp, minLBdp = minLBdp)
-  SNP_distribution(data = final_dp, outPrefix = outPrefix, chr = chr)
-  export_dp(data = final_dp, outPrefix = outPrefix, highP = highP, lowP = lowP, highB = highB, lowB = lowB)
-  slidwin <- calc_index_etc(data = final_dp, CI = CI, outPrefix = outPrefix, 
-                            minHBdp = minHBdp, minLBdp = minLBdp, popType = popType, 
-                            bulkSizeH = bulkSizeH, bulkSizeL = bulkSizeL, 
-                            winSize = winSize, winStep = winStep)
-  export_figure(data = slidwin, outPrefix = outPrefix, chr = chr, len = len, minN = minN, highB = highB, lowB = lowB, width = width, height = height)
+  depth_statistics(x = x, outPrefix = outPrefix)
+  if ("BothParent" %in% class(x)) {
+    cat(class(x), "\n")
+    x_filter <- filterDP(x = x, minHPdp = minHPdp, minLPdp = minLPdp, minHBdp = minHBdp, minLBdp = minLBdp)
+  } else if ("HighParent" %in% class(x)) {
+    cat(class(x), "\n")
+    x_filter <- filterDP(x = x, minHPdp = minHPdp, minHBdp = minHBdp, minLBdp = minLBdp)
+  } else if ("LowParent" %in% class(x)) {
+    cat(class(x), "\n")
+    x_filter <- filterDP(x = x, minLPdp = minLPdp, minHBdp = minHBdp, minLBdp = minLBdp)
+  } else {
+    cat(class(x), "\n")
+    x_filter <- filterDP(x = x, minHBdp = minHBdp, minLBdp = minLBdp)
+  }
+  
+  SNP_distribution(x = x_filter, outPrefix = outPrefix, 
+                   targetChr = chr$CHROM, 
+                   chrLabel = chr$LABEL)
+  export_dp(x = x_filter, outPrefix = outPrefix)
+  x_filter <- calc_index_etc(x = x_filter, outPrefix = outPrefix, winSize = winSize, winStep = winStep)
+  export_figure(x = x_filter, 
+                outPrefix = outPrefix, 
+                targetChr = chr$CHROM, 
+                chrLabel = chr$LABEL, 
+                minN = minN, 
+                width = width, height = height)
+  
   # 如果提供至少一个亲本就可以计算区间
-  if ((!is.na(highP) && paste(highP, "GT", sep = ".") %in% colnames(data)) || (!is.na(lowP) && paste(lowP, "GT", sep = ".") %in% colnames(data))) {
-    getQTL_and_exportFigure(data = slidwin, outPrefix = outPrefix, minN = minN, chr = chr, len = len)
+  if ("WithParent" %in% class(x)) {
+    #getQTL_and_exportFigure(data = slidwin, outPrefix = outPrefix, minN = minN, chr = chr, len = len)
+    getQTL_and_exportFigure(x = x_filter, outPrefix = outPrefix, minN = minN)
   }
   # 回到原始工作目录
   setwd(wd)
