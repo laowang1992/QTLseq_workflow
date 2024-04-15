@@ -34,9 +34,8 @@ if (length(samples) != length(unique(samples)) || length(samples) == 0) {
   stop("Duplication samples or null sample.\n")
 }
 
-chr <- read_tsv(file = chrInfo, col_names = c("Chr", "Name"), show_col_types = FALSE)
-chromInfo <- read_tsv(file = chrLen, col_names = F, show_col_types = FALSE) %>% 
-  select(Chr = X1, End = X2) %>% 
+chr <- read_tsv(file = chrInfo, col_names = c("Chr", "Name"), col_types = cols(Chr = "c"), show_col_types = FALSE)
+chromInfo <- read_tsv(file = chrLen, col_names = c("Chr", "End"), col_types = cols(Chr = "c"), show_col_types = FALSE) %>% 
   right_join(chr, by = "Chr") %>% 
   mutate(Start = 0) %>% 
   select(Chr, Name, Start, End)
@@ -44,7 +43,7 @@ chromInfo <- read_tsv(file = chrLen, col_names = F, show_col_types = FALSE) %>%
 # median
 mid <- 0
 for (sample in samples) {
-  subdf <- read_tsv(file = paste(sample, "win.stat.gz", sep = "."), col_names = T, show_col_types = FALSE, comment = "##") %>% 
+  subdf <- read_tsv(file = paste(sample, "win.stat.gz", sep = "."), col_names = T, col_types = cols(`#Chr` = "c"), show_col_types = FALSE, comment = "##") %>% 
     mutate(Sample = sample) %>% rename(Chr = `#Chr`)
   subdf <- chr %>% select(Chr) %>% left_join(subdf, by = "Chr")
   if (mid < median(subdf$MeanDepth)) {
