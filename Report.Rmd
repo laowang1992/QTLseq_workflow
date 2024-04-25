@@ -75,7 +75,7 @@ file.copy(from = paste0("./02.SNP_indel/", prefix, ".filter.INDELs.vcf.gz.tbi"),
 file.copy(from = paste0("./02.SNP_indel/", prefix, ".filter.SNPs.vcf.gz"), to = paste0("./result/02.SNP_indel/", prefix, ".filter.SNPs.vcf.gz"))
 file.copy(from = paste0("./02.SNP_indel/", prefix, ".filter.SNPs.vcf.gz.tbi"), to = paste0("./result/02.SNP_indel/", prefix, ".filter.SNPs.vcf.gz.tbi"))
 
-file.copy(from = paste("./02.SNP_indel/", prefix, ".flt.report.html"), to = paste("./result/02.SNP_indel/", prefix, ".report.html", sep = ""))
+file.copy(from = paste0("./02.SNP_indel/", prefix, ".flt.report.html"), to = paste("./result/02.SNP_indel/", prefix, ".report.html", sep = ""))
 ```
 
 # 样本信息
