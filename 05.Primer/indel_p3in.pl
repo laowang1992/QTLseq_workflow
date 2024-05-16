@@ -104,7 +104,7 @@ while(<IN>){
 		if($_>$max){$max=$_}
 	}
 	if($max>$len[0]){$max=$len[0]}
-	print OUT "SEQUENCE_ID=$a[3]\nSEQUENCE_TEMPLATE=$a[0]\nSEQUENCE_TARGET=249,$max\nPRIMER_TASK=generic\nPRIMER_PRODUCT_SIZE_RANGE=$minProdLen-$maxProdLen\nPRIMER_MIN_SIZE=$primerMinSize\nPRIMER_OPT_SIZE=$primerOptSize\nPRIMER_MAX_SIZE=$primerMaxSize\nPRIMER_MIN_GC=$primerMinGC\nPRIMER_MAX_GC=$primerMaxGC\nPRIMER_MIN_TM=$primerMinTM\nPRIMER_OPT_TM=$primerOptTM\nPRIMER_MAX_TM=$primerMaxTM\nPRIMER_NUM_RETURN=$primerNumReturn\nPRIMER_THERMODYNAMIC_PARAMETERS_PATH=$config\n=\n";
+	print OUT "SEQUENCE_ID=$a[3]\nSEQUENCE_TEMPLATE=$a[0]\nSEQUENCE_TARGET=249,$max\nPRIMER_TASK=generic\nPRIMER_PRODUCT_SIZE_RANGE=$minProdLen-$maxProdLen\nPRIMER_MIN_SIZE=$primerMinSize\nPRIMER_OPT_SIZE=$primerOptSize\nPRIMER_MAX_SIZE=$primerMaxSize\nPRIMER_MIN_GC=$primerMinGC\nPRIMER_MAX_GC=$primerMaxGC\nPRIMER_MIN_TM=$primerMinTM\nPRIMER_OPT_TM=$primerOptTM\nPRIMER_MAX_TM=$primerMaxTM\nPRIMER_NUM_RETURN=$primerNumReturn\nPRIMER_PAIR_WT_DIFF_TM=1.0\nPRIMER_PAIR_MAX_DIFF_TM=1.5\nPRIMER_THERMODYNAMIC_PARAMETERS_PATH=$config\n=\n";
 }
 close IN;
 close OUT;
