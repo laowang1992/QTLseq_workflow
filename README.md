@@ -1,5 +1,5 @@
 # QTLseq_workflow
-From NGS data to QTL-seq result
+This is a QTL-seq workflow, from NGS data to QTL-seq result.
 # 一 QTL-seq原理
 QTL-seq<sup>[1](#ref)</sup>是一种将Bulked‐segregant analysis (BSA)<sup>[2](#ref),[3](#ref)</sup>和高通量测序相结合，快速定位QTL的方法。目标性状有差异的双亲构建的分离群体中分别选取极端表型个体进行等量混合构建两个极端表型bulked DNA pool并进行测序。随后进行变异分析筛选出双亲间SNP位点并分别计算两个bulked DNA pool中每个SNP位点上某一亲本基因型read覆盖深度占该位点总read深度的比值，即SNP index，通过两个bulked DNA pool的SNP index相减即得到ΔSNP index。在基因组所有区域中，目标基因及其连锁的区域由于根据表型受到相反的选择在两个bulked DNA pool中表现出不同的趋势，因此ΔSNP index会显著偏离0附近；另一方面，于目标形状无关的区域则两个bulked DNA pool则表现为相似的变化趋势，因此ΔSNP index会在0附近波动（图1）。
 <br/>
@@ -32,6 +32,52 @@ scaffoldA01	276029	.	CA	CAA,C	1809.04	PASS	AC=10,4;AF=0.556,0.222;AN=18;BaseQRan
 ```
 
 在鉴定的INDELs中筛选两个亲本内纯和且在亲本间不同的位点，即两亲本基因型分别为0/0、1/1或者1/1、0/0的位点，再根据INDEL位置提取上下游各250 bp基因组序列，随后使用primer3<sup>[12](#ref)</sup>（version: 2.5.0）进行引物设计（引物退火温度、长度、GC含量和扩增片段长短等偏好需提前说明，同时需根据实验室电泳仪器能区分的INDEL大小挑选合适的位点，引物根据参考基因组设计，其真实位置和特异性需根据序列比对和实验结果进行验证）。
+
+# Dependency
+All the dependency and version are based on my current platform. The other version maybe compatible, but were untested.
+## Basic
+- perl v5.26.3
+  - Getopt::Long 2.54
+- Python 3.9.16
+- R version 4.2.1
+  - tidyverse_2.0.0
+  - argparser_0.7.1
+  - jsonlite_1.8.5
+  - RColorBrewer_1.1-3
+  - circlize_0.4.16
+  - rmarkdown_2.22
+  - knitr_1.43
+  - DT_0.28
+## Filter raw sequencing data
+- fastp 0.23.2
+- FastQC v0.11.9
+## Mapping
+- bwa 0.7.17-r1188
+- bwa-mem2 2.2.1
+- bowtie 2.4.5
+- samtools 1.15.1
+- sambamba 0.8.2
+- picard 2.23.3
+- PanDepth v2.21
+## Calling variant
+GATK 3.8-0-ge9d806836
+bcftools 1.15.1
+## QTL-seq analysis
+- R version 4.2.1
+  - easyQTLseq_0.1.0
+## Annotation
+- ANNOVAR 20191024
+## Primer design
+- seqkit v2.1.0
+- primer3 2.6.1
+- e-PCR 2.3.12
+- perl v5.26.3
+  - Parallel::ForkManager 2.02
+  - List::Util 1.63
+  - Bio::SeqIO 1.7.8
+
+
+
  <br>
  <br>
 

@@ -77,9 +77,9 @@ if (argv$createParameter) {
 }
 
 library(tidyverse)
-library(cowplot)
-library(ggsci)
-library(RColorBrewer)
+#library(cowplot)
+#library(ggsci)
+#library(RColorBrewer)
 library(easyQTLseq)
 
 if (FALSE) {
