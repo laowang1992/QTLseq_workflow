@@ -44,7 +44,7 @@ unless ($input && $output) {
 open my $p3out_fh, '<', $input or die "Cannot open $input: $!";
 open my $output_fh, '>', $output or die "Cannot open $output: $!";
 
-print $output "ID\tNUM\tPrimerL\tPrimerR\tHit\tTmL\tTmR\tGCL\tGCR\tLength\n";
+print $output_fh "ID\tNUM\tPrimerL\tPrimerR\tHit\tTmL\tTmR\tGCL\tGCR\tLength\n";
 while (my %primers = get_next_primers($p3out_fh)) {
     for (my $i = 1; $i <= $primers{'number'}; ++$i) {
         my $id      = $primers{'id'};
@@ -90,12 +90,12 @@ while (my %primers = get_next_primers($p3out_fh)) {
             $hit -= 2;
         }
 
-        print $output "$id\t$num\t$primerL\t$primerR\t$hit\t$tmL\t$tmR\t$gcL\t$gcR\t$len\n"
+        print $output_fh "$id\t$num\t$primerL\t$primerR\t$hit\t$tmL\t$tmR\t$gcL\t$gcR\t$len\n"
     }
 }
 
 close $p3out_fh;
-close $output;
+close $output_fh;
 
 sub get_next_primers {
     my ($fh) = @_;
