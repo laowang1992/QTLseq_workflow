@@ -46,8 +46,9 @@ do
 	
 	# 设计引物，每个位置设计3个
 	primer3_core -strict_tags $outPrefix.p3in > $outPrefix.p3out
-	# e-PCR
-	perl ../epcr.pl $outPrefix.p3out $outPrefix.primer.txt
+	# e-PCR, 增加timeout机制，增加多线程
+	#perl ../epcr.pl --input $outPrefix.p3out --output $outPrefix.primer.txt --timeout 2
+	perl ../epcr_parallel.pl --input $outPrefix.p3out --output $outPrefix.primer.txt --timeout 2 --threads $thread
 	# merge
 	Rscript ../merge.R $outPrefix.indels.txt $outPrefix.primer.txt
 	
