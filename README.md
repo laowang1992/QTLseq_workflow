@@ -18,11 +18,15 @@ Use Bowtie2[^5] (version: 2.4.1) software to align clean reads to the reference 
 Calling variant is performed using the Genome Analysis Toolkit (GATK)[^10] (version: 3.8-0-ge9d806836). First, the HaplotypeCaller function of GATK is used to analyze each sample individually, then the CombineGVCFs function is used to merge the results. Subsequently, the GenotypeGVCFs function is employed to obtain SNP and INDEL information. Finally, the VariantFiltration function is used to filter the original variant sites to obtain reliable variant information.
 ## QTL-seq analysis
 The R package easyQTLseq[^11] (version: 0.1.0) is used for QTL-seq analysis, with the following specific process:
+
 When parental genotype is available (resequencing data or reference genome), we select Single Nucleotide Polymorphism (SNP) sites that are homozygous in both parents and different between parents (i.e., aa × bb) for QTL-seq analysis. First, we calculate the proportion of reads in the two pools that match the mutant parent type to the total coverage depth, which is the SNP index. Simultaneously, we delete SNPs where the SNP index in both pools is less than 0.3 or greater than 0.7. Then, we subtract the SNP index of the wild-type phenotype pool from that of the mutant phenotype pool to obtain the delta SNP index. Confidence intervals are obtained by simulating 10,000 times under the null hypothesis of no QTL, based on the given number of individuals in the pool and coverage depth. At the same time, we calculate the Euclidean Distance (ED) and its fourth power (ED^4^).
+
 When parental genotype information is not available, we screen for polymorphic SNP sites. We calculate the proportion of different base coverage depths to the total depth at that site, remove SNPs where the proportion of different bases is simultaneously less than 0.3 or greater than 0.7, and calculate the Euclidean Distance (ED) and its fourth power (ED^4^).
+
 $$
 ED=\sqrt{(A_{mut}-A_{wt})^2+(C_{mut}-C_{wt})^2+(G_{mut}-G_{wt})^2+(T_{mut}-T_{wt})^2}
 $$
+
 We perform smoothing on the ΔSNP-index and Euclidean Distance (ED) values using a sliding window approach. This technique calculates statistical metrics over overlapping genomic intervals, effectively reducing noise and highlighting broad patterns across chromosomes. The smoothed data is then visualized in a plot where the x-axis represents the physical position along each chromosome, providing a genome-wide view of potential QTL regions.
 ## Variants annotation
 To facilitate subsequent candidate gene mining, we use ANNOVAR[^12] to annotate the SNP sites from the QTL-seq analysis, as well as Insertion/Deletion (InDel) sites screened under the same criteria. This annotation identifies the location of variant sites (intergenic, upstream, downstream, 5'UTR, 3'UTR, intronic, splicing, or exonic) and their impact on protein-coding genes (synonymous, nonsynonymous, stopgain, stoploss, frameshift, or nonframeshift).
