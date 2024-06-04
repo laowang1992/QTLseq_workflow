@@ -33,6 +33,8 @@ To facilitate subsequent candidate gene mining, we use ANNOVAR[^12] to annotate 
 ## Primer design
 To conduct subsequent fine mapping, we use primer3[^13][^14] software to batch design primers based on the InDel sites screened above, and then use e-PCR (version: 2.3.12) to perform specificity testing.
 
+E-PCR is time-consuming when primer targets multiple genomic regions, so `epcr.pl` will returns a timeout when the e-PCR time exceeds 2 seconds. `epcr_parallel.pl` is a parallel computing version of `epcr.pl`, which can further save time.
+
 # Dependency
 All the dependency and version are based on my current platform. The other version maybe compatible, but were untested.
 ## Basic
