@@ -1,4 +1,5 @@
 library(argparser, quietly=TRUE)
+options(scipen = 999)
 
 p <- arg_parser("Filter primer for 2 parent lines")
 
@@ -46,7 +47,7 @@ d1 <- df %>% select("CHROM", "POS", "ID", "REF", "ALT", "REF_len", "ALT_len", "D
               "PrimerL1", "PrimerR1", "Hit1", "TmL1", "TmR1", "GCL1", "GCR1", "Length1",
               "PrimerL2", "PrimerR2", "Hit2", "TmL2", "TmR2", "GCL2", "GCR2", "Length2",
               "PrimerL3", "PrimerR3", "Hit3", "TmL3", "TmR3", "GCL3", "GCR3", "Length3") %>% 
-  filter((s1 == "0/0" & s2 == "1/1") | (s1 == "1/1" & s2 == "0/0")) %>% filter(!is.na(Hit1))
+  filter((s1 == "0/0" & s2 == "1/1") | (s1 == "1/1" & s2 == "0/0") | (s1 == "0|0" & s2 == "1|1") | (s1 == "1|1" & s2 == "0|0")) %>% filter(!is.na(Hit1))
 
 colnames(d1) = c("CHROM", "POS", "ID", "REF", "ALT", "REF_len", "ALT_len", "DIFF", "QUAL", s1 , s2, 
                  "PrimerL1", "PrimerR1", "Hit1", "TmL1", "TmR1", "GCL1", "GCR1", "Length1",
