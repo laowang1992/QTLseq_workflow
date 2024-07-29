@@ -87,11 +87,12 @@ if (n <= 6 & n > 0) {
     p <- ggplot(subdf, aes(x = Pos, y = MeanDepth, fill = Chr)) +
       geom_area() +
       scale_x_continuous(expand = c(0, 0)) +
-      scale_y_continuous(limits = c(0, 2.5*mid), n.breaks = 2) +
+      scale_y_continuous(n.breaks = 2) +
       scale_fill_manual(values = getPalette(nrow(chromInfo))) +
-      labs(x = NULL, y = "Depth") +
-      facet_grid(Name ~ .) +
-      cowplot::theme_half_open() +
+      labs(x = NULL, y = "Depth") + 
+      coord_cartesian(ylim = c(0, 2.5*mid)) + 
+      facet_grid(Name ~ .) + 
+      cowplot::theme_half_open() + 
       theme(strip.text.y = element_text(angle = 0),
             strip.background = element_rect(color = NA, fill = NA),
             legend.position = "NULL")
