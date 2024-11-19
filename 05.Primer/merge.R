@@ -52,7 +52,7 @@ position = "center"
 pt.cex = 1.5
 cex = 0.8
 
-png(filename = "Primer_Distribution.png", width = width, height = height, units = "in", res = 500)
+png(filename = str_replace(argv[2], "primer.txt", "Primer_Distribution.png"), width = width, height = height, units = "in", res = 500)
 par(mar = mar + 0.1)
 #par(mar = c(5, 4, 4, 2) + 0.1)
 circos.par("start.degree" = 90, track.height = track.height, track.margin = c(0, 0), cell.padding = c(0, 1.00, 0.02, 1.00))
@@ -74,7 +74,7 @@ circos.clear()
 legend(position, inset=.05, c("All primer", "Specific primer"), pch=15, col=c("red", "blue"), pt.cex = pt.cex, cex = cex, box.col = NA)
 dev.off()
 
-pdf(file = "Primer_Distribution.pdf", width = width, height = height)
+pdf(file = str_replace(argv[2], "primer.txt", "Primer_Distribution.pdf"), width = width, height = height)
 par(mar = mar + 0.1)
 #par(mar = c(5, 4, 4, 2) + 0.1)
 circos.par("start.degree" = 90, track.height = track.height, track.margin = c(0, 0), cell.padding = c(0, 1.00, 0.02, 1.00))
