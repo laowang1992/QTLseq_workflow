@@ -33,7 +33,7 @@ source("../slidingWindow.R")
 
 chrInfo <- "../../refseq/chrom.txt"
 chrLen <- "../../refseq//ref.len"
-chr <- read_tsv(file = chrInfo, col_names = c("CHROM", "Name"), col_types = cols(Chr = "c"), show_col_types = FALSE)
+chr <- read_tsv(file = chrInfo, col_names = c("CHROM", "Name"), col_types = cols(CHROM = "c"), show_col_types = FALSE)
 chromInfo <- read_tsv(file = chrLen, col_names = c("CHROM", "End"), col_types = cols(CHROM = "c"), show_col_types = FALSE) %>% 
   right_join(chr, by = "CHROM") %>% 
   mutate(Start = 0) %>% 
