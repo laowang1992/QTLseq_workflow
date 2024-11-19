@@ -1,5 +1,5 @@
 ---
-title: "茄子（*Solanum melongena* L.）QTL-seq分析"
+title: "苦瓜（*Momordica charantia* L.）QTL-seq分析"
 author: "老王 <wangpf0608@126.com>"
 date: "`r Sys.time()`"
 output: 
@@ -22,9 +22,9 @@ knitr::opts_chunk$set(
 library(tidyverse)
 prefix <- "BSA"
 aligner <- "bwa-mem2"  # 
-genome <- "茄子HQ-1315"
-genome_ref <- "Wei, Q., Wang, J., Wang, W., Hu, T., Hu, H., & Bao, C. (2020). A high-quality chromosome-level genome assembly reveals genetics for important traits in eggplant. Horticulture research, 7(1), 153. https://doi.org/10.1038/s41438-020-00391-0"
-genome_url <- "http://www.eggplant-hq.cn/Eggplant/home/index"
+genome <- "苦瓜MC.update"
+genome_ref <- "NULL"
+genome_url <- "NULL"
 qtlParm <- read_csv(file = "./03.Analysis/Parameter.csv")
 ```
 
@@ -170,15 +170,25 @@ for (i in seq_along(qtlParm$outPrefix)) {
     target_file <- file.path(folder_target, file_name)
     file.copy(from = source_file, to = target_file, overwrite = FALSE)  # 如果要覆盖目标文件，请将overwrite参数设置为TRUE
   }
-  cat("### ", qtlParm$outPrefix[i], " {-}\n", sep = "")
+  cat("### ", qtlParm$outPrefix[i], " {.tabset .tabset-fade .tabset-pills -}\n", sep = "")
   cat("根据变异检测结果进一步筛选有多态性的SNP标记用于QTL-seq分析。SNP在各染色体上的分布如下图：\n\n", "<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".SNP_distribution_histogram.png' width='80%'>\n\n", sep = "")
+  cat("两个Bulk pool的SNP-index值如下图所示：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".", qtlParm$highBulk[i], ".SNP_index.line.png'>\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".", qtlParm$lowBulk[i], ".SNP_index.line.png'>\n\n", sep = "")
+  cat("#### 95% confidence interval {-}\n")
   if (file.exists(paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".95CI.csv", sep = ""))) {
     CI95 <- read_csv(file = paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".95CI.csv", sep = ""), show_col_types = FALSE)
-    CI99 <- read_csv(file = paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".99CI.csv", sep = ""), show_col_types = FALSE)
-    cat("按照95%的置信区间，总共鉴定到 ", nrow(CI95), " 个QTL，按照99%的置信区间，总共鉴定到 ", nrow(CI99), " 个QTL。两个Bulk pool的SNP-index值和delta SNP-index值如下图：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".", qtlParm$highBulk[i], ".SNP_index.line.png'>\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".", qtlParm$lowBulk[i], ".SNP_index.line.png'>\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".delta_SNP_index.99CI.line.png'>\n\n", sep = "")
+    cat("按照95%的置信区间，总共鉴定到 ", nrow(CI95), " 个QTL。", sep = "")
   } else {
-    cat("按照95%或99%的置信区间，并未检测到QTL。\n\n")
+    cat("按照95%的置信区间，并未检测到QTL。")
   }
+  cat("delta SNP-index值如下图：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".delta_SNP_index.95CI.line.png'>\n\n", sep = "")
+  cat("#### 99% confidence interval {-}\n")
+  if (file.exists(paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".99CI.csv", sep = ""))) {
+    CI99 <- read_csv(file = paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".99CI.csv", sep = ""), show_col_types = FALSE)
+    cat("按照99%的置信区间，总共鉴定到 ", nrow(CI99), " 个QTL。", sep = "")
+  } else {
+    cat("按照99%的置信区间，并未检测到QTL。")
+  }
+  cat("delta SNP-index值如下图：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".delta_SNP_index.99CI.line.png'>\n\n", sep = "")
 }
 ```
 
@@ -208,19 +218,7 @@ for (i in seq_along(qtlParm$outPrefix)) {
 }
 ```
 
-## 引物设计
-```{R include=FALSE}
-for (i in seq_along(qtlParm$outPrefix)) {
-  dir.create(path = paste0("./result/05.Primer/", qtlParm$outPrefix[i]), showWarnings = FALSE, recursive = TRUE)
-  file.copy(from = paste0("./05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".primer.csv"), 
-            to = paste0("./result/05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".primer.csv"), overwrite = FALSE)  # 如果要覆盖目标文件，请将overwrite参数设置为TRUE
-  file.copy(from = paste0("./05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], "Primer_Distribution.pdf"), 
-            to = paste0("./result/05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], "Primer_Distribution.pdf"), overwrite = FALSE)
-  file.copy(from = paste0("./05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], "Primer_Distribution.png"), 
-            to = paste0("./result/05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], "Primer_Distribution.png"), overwrite = FALSE)
-}
-```
-
+## 引物设计 {.tabset .tabset-fade .tabset-pills}
 根据双亲间差异的INDEL位点（aa × bb）设计引物并进行e-PCR检测。在选择引物时应根据对应亲本基因型，并选择扩增片段长度差异大小合适的引物。同时应注意，引物设计和e-PCR都是根据参考基因组进行的，其真实情况因不同亲本而有差异，因此仍需进行PAGE电泳验证。
 
 引物设计结果说明：
@@ -237,6 +235,18 @@ for (i in seq_along(qtlParm$outPrefix)) {
 - GCL1-3、GCR1-3：左右引物GC含量；
 - Length1-3：每对引物扩增的片段长度，应根据自己习惯选择合适长度。
 
+```{r, results='asis'}
+for (i in seq_along(qtlParm$outPrefix)) {
+  dir.create(path = paste0("./result/05.Primer/", qtlParm$outPrefix[i]), showWarnings = FALSE, recursive = TRUE)
+  file.copy(from = paste0("./05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".primer.csv"), 
+            to = paste0("./result/05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".primer.csv"), overwrite = FALSE)  # 如果要覆盖目标文件，请将overwrite参数设置为TRUE
+  file.copy(from = paste0("./05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".Primer_Distribution.pdf"), 
+            to = paste0("./result/05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".Primer_Distribution.pdf"), overwrite = FALSE)
+  file.copy(from = paste0("./05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".Primer_Distribution.png"), 
+            to = paste0("./result/05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".Primer_Distribution.png"), overwrite = FALSE)
+  cat("### ", qtlParm$outPrefix[i], " {-}\n设计的引物以及特异性引物的分布如下图所示：\n\n<img src='./result/05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".Primer_Distribution.png' width='70%'>\n\n", sep = "")
+}
+```
 
 # 参考文献 {-}
 [^1]: Takagi, H., Abe, A., Yoshida, K., Kosugi, S., Natsume, S., Mitsuoka, C., Uemura, A., Utsushi, H., Tamiru, M., Takuno, S., Innan, H., Cano, L. M., Kamoun, S., & Terauchi, R. (2013). QTL-seq: rapid mapping of quantitative trait loci in rice by whole genome resequencing of DNA from two bulked populations. The Plant journal : for cell and molecular biology, 74(1), 174–183. https://doi.org/10.1111/tpj.12105
