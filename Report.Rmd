@@ -214,6 +214,10 @@ for (i in seq_along(qtlParm$outPrefix)) {
   dir.create(path = paste0("./result/05.Primer/", qtlParm$outPrefix[i]), showWarnings = FALSE, recursive = TRUE)
   file.copy(from = paste0("./05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".primer.csv"), 
             to = paste0("./result/05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".primer.csv"), overwrite = FALSE)  # 如果要覆盖目标文件，请将overwrite参数设置为TRUE
+  file.copy(from = paste0("./05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], "Primer_Distribution.pdf"), 
+            to = paste0("./result/05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], "Primer_Distribution.pdf"), overwrite = FALSE)
+  file.copy(from = paste0("./05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], "Primer_Distribution.png"), 
+            to = paste0("./result/05.Primer/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], "Primer_Distribution.png"), overwrite = FALSE)
 }
 ```
 
