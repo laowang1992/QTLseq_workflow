@@ -34,5 +34,4 @@ fi
 
 cd ${work_dir}/02.SNP_indel
 # VariantQC
-java -jar ${DISCVRSeq} VariantQC -O ${filename}.flt.report.html -R ${genome} -V ${filename}.flt.vcf.gz --maxContigs `wc -l $genome.fai` --threads ${thread}
-
+java -jar ${DISCVRSeq} VariantQC -O ${filename}.flt.report.html -R ${genome} -V ${filename}.flt.vcf.gz --maxContigs `cat $work_dir/refseq/chrom.txt | wc -l` --threads ${thread}
