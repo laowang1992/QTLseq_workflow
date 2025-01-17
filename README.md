@@ -102,7 +102,23 @@ nohup sh run_QTLseq.sh &
 ```
 When the pipeline is finished without error, all result should be generated in corresponding directory.
 
- # 参考文献
+# Citation
+
+If this pipeline is used in your research, it is recommended to cite this package
+in the method section, like:
+
+> The QTL-seq analysis was performed using R package easyQTLseq
+> (<https://github.com/laowang1992/easyQTLseq.git>).
+
+This paper is also recommended to cite:
+
+> [Takagi H, Abe A, Yoshida K, et al. QTL-seq: rapid mapping of
+> quantitative trait loci in rice by whole genome resequencing of DNA
+> from two bulked populations. Plant J. 2013;74(1):174-183.
+> doi:10.1111/tpj.12105](https://onlinelibrary.wiley.com/doi/10.1111/tpj.12105)
+
+
+ # Reference
 [^1]: Takagi, H., Abe, A., Yoshida, K., Kosugi, S., Natsume, S., Mitsuoka, C., Uemura, A., Utsushi, H., Tamiru, M., Takuno, S., Innan, H., Cano, L. M., Kamoun, S., & Terauchi, R. (2013). QTL-seq: rapid mapping of quantitative trait loci in rice by whole genome resequencing of DNA from two bulked populations. The Plant journal : for cell and molecular biology, 74(1), 174–183. https://doi.org/10.1111/tpj.12105
 [^2]: Giovannoni, J. J., Wing, R. A., Ganal, M. W., & Tanksley, S. D. (1991). Isolation of molecular markers from specific chromosomal intervals using DNA pools from existing mapping populations. Nucleic acids research, 19(23), 6553–6558. https://doi.org/10.1093/nar/19.23.6553
 [^3]: Michelmore, R. W., Paran, I., & Kesseli, R. V. (1991). Identification of markers linked to disease-resistance genes by bulked segregant analysis: a rapid method to detect markers in specific genomic regions by using segregating populations. Proceedings of the National Academy of Sciences of the United States of America, 88(21), 9828–9832. https://doi.org/10.1073/pnas.88.21.9828
