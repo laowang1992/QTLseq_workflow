@@ -169,15 +169,15 @@ for (i in seq_along(parameter[,1])) {
   width <- parameter$width[i]
   height <- parameter$height[i]
   
-  if (!is.na(highP) && paste(highP, "GT", sep = ".") %in% colnames(data) && 
-      !is.na(lowP) && paste(lowP, "GT", sep = ".") %in% colnames(data)) {
+  if (!is.na(highP) && (paste(highP, "GT", sep = ".") %in% colnames(data) || highP == "REF") && 
+      !is.na(lowP) && (paste(lowP, "GT", sep = ".") %in% colnames(data) || lowP == "REF")) {
     cat("There if 2 parents\n")
     x <- select_sample_and_SNP(data = data, highP = highP, lowP = lowP, highB = highB, lowB = lowB, popType = popType, bulkSize = c(bulkSizeH, bulkSizeL), minGQ = minGQ, chrLen = len)
-  } else if (!is.na(highP) && paste(highP, "GT", sep = ".") %in% colnames(data)) {
+  } else if (!is.na(highP) && (paste(highP, "GT", sep = ".") %in% colnames(data) || highP == "REF")) {
     cat("There is only", highP, "parent\n")
     x <- select_sample_and_SNP(data = data, highP = highP, highB = highB, lowB = lowB, popType = popType, bulkSize = c(bulkSizeH, bulkSizeL), minGQ = minGQ, chrLen = len)
     #source("./for_1_parent.R")
-  } else if (!is.na(lowP) && paste(lowP, "GT", sep = ".") %in% colnames(data)) {
+  } else if (!is.na(lowP) && (paste(lowP, "GT", sep = ".") %in% colnames(data) || lowP == "REF")) {
     cat("There is only", lowP, "parent\n")
     x <- select_sample_and_SNP(data = data, lowP = lowP, highB = highB, lowB = lowB, popType = popType, bulkSize = c(bulkSizeH, bulkSizeL), minGQ = minGQ, chrLen = len)
   } else {
