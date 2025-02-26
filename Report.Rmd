@@ -170,7 +170,7 @@ for (i in seq_along(qtlParm$outPrefix)) {
   folder_source <- paste("./03.Analysis/", qtlParm$outPrefix[i], sep = "")
   folder_target <- paste("./result/03.Analysis/", qtlParm$outPrefix[i], sep = "")
   # 获取A文件夹中以"outPrefix"开头且以".png|pdf|csv"为后缀的文件列表
-  file_list <- list.files(path = folder_source, pattern = paste("^", qtlParm$outPrefix[1], ".*\\.(csv|png|pdf)$", sep = ""))
+  file_list <- list.files(path = folder_source, pattern = paste("^", qtlParm$outPrefix[i], ".*\\.(csv|png|pdf)$", sep = ""))
   # 循环拷贝文件到B文件夹
   for (file_name in file_list) {
     source_file <- file.path(folder_source, file_name)
@@ -207,7 +207,7 @@ for (i in seq_along(qtlParm$outPrefix)) {
   folder_source <- paste("./04.Annotation/", qtlParm$outPrefix[i], sep = "")
   folder_target <- paste("./result/04.Annotation/", qtlParm$outPrefix[i], sep = "")
   # 获取A文件夹中以"outPrefix"开头且以".png|pdf|csv"为后缀的文件列表
-  file_list <- list.files(path = folder_source, pattern = paste("^", qtlParm$outPrefix[1], ".*\\.(csv|png|pdf|exonic_variant_function|variant_function)$", sep = ""))
+  file_list <- list.files(path = folder_source, pattern = paste("^", qtlParm$outPrefix[i], ".*\\.(csv|png|pdf|exonic_variant_function|variant_function)$", sep = ""))
   # 循环拷贝文件到B文件夹
   for (file_name in file_list) {
     source_file <- file.path(folder_source, file_name)
