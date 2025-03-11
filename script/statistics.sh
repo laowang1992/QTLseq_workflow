@@ -9,7 +9,7 @@ cd ${work_dir}/00.data/01.clean_data
 fastqc -o ./QC --nogroup --threads ${thread} *clean.fastq.gz
 # data stat
 cd ${work_dir}/00.data/
-Rscript dataStat.R
+Rscript dataStat.R -d 01.clean_data -o data_stat
 
 cd ${work_dir}/01.Mapping
 # coverage rate and depth
