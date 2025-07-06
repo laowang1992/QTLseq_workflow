@@ -77,10 +77,8 @@ if (argv$createParameter) {
 }
 
 library(tidyverse)
-#library(cowplot)
-#library(ggsci)
-#library(RColorBrewer)
 library(easyQTLseq)
+library(ggrastr)
 
 if (FALSE) {
   ## file name
@@ -171,7 +169,7 @@ for (i in seq_along(parameter[,1])) {
   
   if (!is.na(highP) && (paste(highP, "GT", sep = ".") %in% colnames(data) || highP == "REF") && 
       !is.na(lowP) && (paste(lowP, "GT", sep = ".") %in% colnames(data) || lowP == "REF")) {
-    cat("There if 2 parents\n")
+    cat("There is 2 parents\n")
     x <- select_sample_and_SNP(data = data, highP = highP, lowP = lowP, highB = highB, lowB = lowB, popType = popType, bulkSize = c(bulkSizeH, bulkSizeL), minGQ = minGQ, chrLen = len)
   } else if (!is.na(highP) && (paste(highP, "GT", sep = ".") %in% colnames(data) || highP == "REF")) {
     cat("There is only", highP, "parent\n")
@@ -218,12 +216,47 @@ for (i in seq_along(parameter[,1])) {
                 chrLabel = chr$LABEL, 
                 minN = minN, 
                 width = width, height = height)
+  # 计算QTL位置并导出图表，如果有亲本信息就计算SNP-index区间和ED4区间，如果没有亲本信息只计算ED4区间
+  getQTL_and_exportFigure(x = x_filter, outPrefix = outPrefix, minN = minN)
   
-  # 如果提供至少一个亲本就可以计算区间
+  # 如果提供至少一个亲本
   if ("WithParent" %in% class(x)) {
-    #getQTL_and_exportFigure(data = slidwin, outPrefix = outPrefix, minN = minN, chr = chr, len = len)
-    getQTL_and_exportFigure(x = x_filter, outPrefix = outPrefix, minN = minN)
+    # 这里增加一个画图功能，有些人想要同时显示95%、99%置信区间，并且把每个SNP的点画出来
+    # 这个功能没有添加在easyQTLseq包中
+    # SNP点太多了，导致矢量图太大，因此使用ggrastr包将点变成位图
+    subLen <- chr %>% left_join(len, by = "CHROM") %>% select(-CHROM)
+    sld <- chr %>% left_join(x_filter$slidwin, by = "CHROM")
+    snp <- chr %>% left_join(x_filter$data, by = "CHROM") %>% 
+      mutate(HB.index = HB.HP.AD/HB.DP, LB.index = LB.HP.AD/LB.DP) %>% 
+      filter(HB.DP > mean(HB.DP, na.rm = T) - sd(HB.DP, na.rm = T), 
+             HB.DP < mean(HB.DP, na.rm = T) + 2 * sd(HB.DP, na.rm = T), 
+             LB.DP > mean(LB.DP, na.rm = T) - sd(LB.DP, na.rm = T), 
+             LB.DP < mean(LB.DP, na.rm = T) + 2 * sd(LB.DP, na.rm = T)) %>% 
+      select(-REF, -ALT, -any_of(c("HP.DP", "LP.DP")), -HB.HP.AD, -HB.LP.AD, -HB.DP, -LB.HP.AD, -LB.LP.AD, -LB.DP)
+    
+    # 确定染色体的顺序
+    sld$LABEL <- factor(sld$LABEL, levels = chr$LABEL)
+    snp$LABEL <- factor(snp$LABEL, levels = chr$LABEL)
+    
+    x_sld <- addUp(df = sld, len = subLen, group = "LABEL", pos = "POS", band = 0.005)
+    x_snp <- addUp(df = snp, len = subLen, group = "LABEL", pos = "POS", band = 0.005)
+    
+    p_delta <- ggplot() + 
+      rasterise(geom_point(data = x_snp$df, mapping = aes(x = POS_addUp, y = HB.index-LB.index), color = "lightblue", size = 0.1), dpi = 300) + 
+      geom_line(data = x_sld$df %>% filter(nSNPs > minN), mapping = aes(x = POS_addUp, y = delta.index, group = LABEL), color = "red") + 
+      geom_line(data = x_sld$df %>% filter(nSNPs > minN), mapping = aes(x = POS_addUp, y = CI99upper, group = LABEL), color = "orange") + 
+      geom_line(data = x_sld$df %>% filter(nSNPs > minN), mapping = aes(x = POS_addUp, y = CI99lower, group = LABEL), color = "orange") + 
+      geom_line(data = x_sld$df %>% filter(nSNPs > minN), mapping = aes(x = POS_addUp, y = CI95upper, group = LABEL), color = "green") + 
+      geom_line(data = x_sld$df %>% filter(nSNPs > minN), mapping = aes(x = POS_addUp, y = CI95lower, group = LABEL), color = "green") + 
+      geom_vline(xintercept = x_sld$gaps, linetype = "dashed", color = "gray") + 
+      scale_x_continuous(expand = c(0, 0), breaks = x_sld$breaks, labels = x_sld$labels) + 
+      scale_y_continuous(limits = c(-1, 1), expand = c(0, 0)) + 
+      labs(y = "Delta SNP index", x = NULL) + 
+      cowplot::theme_half_open()
+    ggsave(p_delta, filename = paste0(outPrefix, ".delta_SNP_index.pdf"), width = width, height = height)
+    ggsave(p_delta, filename = paste0(outPrefix, ".delta_SNP_index.png"), width = width, height = height, dpi = 500)
   }
+  
   # 回到原始工作目录
   setwd(wd)
 }

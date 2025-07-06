@@ -120,11 +120,21 @@ knitr::include_graphics("./image/QTLseq流程.png")
 ## QTL-seq分析
 这里使用R包easyQTLseq[^10]进行QTL-seq分析，具体流程如下：
 
-在有双亲基因型信息 (重测序数据或参考基因组) 的情况下，我们筛选亲本内纯合、亲本间不同 (即：aa × bb) 的Single Nucleotide Polymorphism (SNP) 位点进行QTL-seq分析。首先计算两个混池中突变表型亲本类型reads的覆盖深度占总覆盖深度的比例，即SNP index，同时删除两个混池中SNP index同时小于0.3或大于0.7的SNP，然后突变表型混池的SNP index减去野生型表型混池的SNP index得到delta SNP index。置信区间以没有QTL为零假设，按照给定混池个体数和覆盖深度进行10,000模拟得到。同时计算欧氏距离 (Euclidean Distance, ED) 及其四次方 (ED^4^)。
-
-在没有双亲基因型信息的情况下，筛选有多态性的 SNP 位点。计算不同碱基覆盖深度占该位点总深度的比例，去除不同碱基比例同时小于0.3或大于0.7的SNP，并计算欧氏距离 (Euclidean Distance, ED) 及其四次方 (ED^4^)。
+在有双亲基因型信息 (重测序数据或参考基因组) 的情况下，我们筛选亲本内纯合、亲本间不同 (即：aa × bb) 的Single Nucleotide Polymorphism (SNP) 位点进行QTL-seq分析。首先计算两个混池中突变表型亲本类型reads的覆盖深度占总覆盖深度的比例，即SNP index，同时删除两个混池中SNP index同时小于0.3或大于0.7的SNP，然后突变表型混池的SNP index减去野生型表型混池的SNP index得到delta SNP index。置信区间以没有QTL为零假设，按照给定混池个体数和覆盖深度进行10,000模拟得到，将delta SNP index超出置信区间的区域作为显著QTL。同时计算欧氏距离 (Euclidean Distance, ED) 及其四次方 (ED^4^)，我们将ED^4^超出ED^4^均值加3倍ED^4^方差的区域作为显著QTL。在没有双亲基因型信息的情况下，筛选有多态性的 SNP 位点。计算不同碱基覆盖深度占该位点总深度的比例，去除不同碱基比例同时小于0.3或大于0.7的SNP，并计算欧氏距离 (Euclidean Distance, ED) 及其四次方 (ED^4^)。
+$$
+\text{SNP-index}(x) = \frac{\text{Alt}(x)}{\text{Ref}(x) + \text{Alt}(x)}
+$$
+$$
+\Delta \text{SNP-index}(x) = \text{SNP-index}_{\text{High}}(x) - \text{SNP-index}_{\text{Low}}(x)
+$$
+$$
+\text{QTL region} = \left\{ x \;\middle|\; \left| \Delta \text{SNP-index}(x) \right| > \mathrm{CI}_{\alpha}(x) \right\}
+$$
 $$
 ED=\sqrt{(A_{mut}-A_{wt})^2+(C_{mut}-C_{wt})^2+(G_{mut}-G_{wt})^2+(T_{mut}-T_{wt})^2}
+$$
+$$
+\text{QTL region} = \left\{ x \mid \mathrm{ED}^4(x) > \overline{\mathrm{ED}^4} + 3 \cdot \mathrm{Var}(\mathrm{ED}^4) \right\}
 $$
 随后我们对ΔSNP-index和ED值按滑窗统计的方法进行平滑处理，并按照染色体位置分布绘图。
 
@@ -179,23 +189,20 @@ for (i in seq_along(qtlParm$outPrefix)) {
   }
   cat("### ", qtlParm$outPrefix[i], " {.tabset .tabset-fade .tabset-pills -}\n", sep = "")
   cat("根据变异检测结果进一步筛选有多态性的SNP标记用于QTL-seq分析。SNP在各染色体上的分布如下图：\n\n", "<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".SNP_distribution_histogram.png' width='80%'>\n\n", sep = "")
-  cat("两个Bulk pool的SNP-index值如下图所示：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".", qtlParm$highBulk[i], ".SNP_index.line.png'>\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".", qtlParm$lowBulk[i], ".SNP_index.line.png'>\n\n", sep = "")
-  cat("#### 95% confidence interval {-}\n")
+  #cat("两个Bulk pool的SNP-index值如下图所示：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".", qtlParm$highBulk[i], ".SNP_index.line.png'>\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".", qtlParm$lowBulk[i], ".SNP_index.line.png'>\n\n", sep = "")
   if (file.exists(paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".95CI.csv", sep = ""))) {
     CI95 <- read_csv(file = paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".95CI.csv", sep = ""), show_col_types = FALSE)
-    cat("按照95%的置信区间，总共鉴定到 ", nrow(CI95), " 个QTL。", sep = "")
-  } else {
-    cat("按照95%的置信区间，并未检测到QTL。")
-  }
-  cat("delta SNP-index值如下图：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".delta_SNP_index.95CI.line.png'>\n\n", sep = "")
-  cat("#### 99% confidence interval {-}\n")
-  if (file.exists(paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".99CI.csv", sep = ""))) {
     CI99 <- read_csv(file = paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".99CI.csv", sep = ""), show_col_types = FALSE)
+    
+    cat("#### Delta SNP index {-}\n")
+    cat("按照95%的置信区间，总共鉴定到 ", nrow(CI95), " 个QTL,", sep = "")
     cat("按照99%的置信区间，总共鉴定到 ", nrow(CI99), " 个QTL。", sep = "")
-  } else {
-    cat("按照99%的置信区间，并未检测到QTL。")
+    cat("delta SNP-index值如下图：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".delta_SNP_index.png'>\n\n", sep = "")
   }
-  cat("delta SNP-index值如下图：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".delta_SNP_index.99CI.line.png'>\n\n", sep = "")
+  cat("#### Euclidean distance {-}\n")
+  ed4 <- read_csv(file = paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".ED4QTL.csv", sep = ""), show_col_types = FALSE)
+  cat("按照欧几里得距离算法，总共鉴定到 ", nrow(ed4), " 个QTL,", sep = "")
+  cat("欧几里得距离结果如下图：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".ED4.line.png'>\n\n", sep = "")
 }
 ```
 
