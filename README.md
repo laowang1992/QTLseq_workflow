@@ -13,25 +13,32 @@ Select 30-50 plants with extreme phenotypes from the segregating population, as 
 ## Sequencing data uality control
 Use fastp[^4](version: 0.20.0) to filter the raw data to obtain clean data. Calculate and report the total bases, total reads, Q30, Q20, GC content, and effective data ratio before and after filtering (data_stat.csv/txt). Then, use FastQC (version: 0.11.9) to perform quality assessment on the data before and after filtering (QC/sample_fastqc.html).
 ## Alignment
-Use BWA[^5] (version: 0.7.17-r1188), BWA-MEM2[^6] (version: 2.2.1) or Bowtie2[^7] (version: 2.4.1) software to align clean reads to the reference genome, obtaining SAM (Sequence Alignment/Map) format files, and calculate alignment statistics (01.Mapping/align_stat.csv). Subsequently, use SAMtools (version: 1.9) or Sambamba[^8] (version: 0.8.2) to sort the alignment results (SAM files) according the coordinates of reads, and convert them into BAM (Binary Alignment/Map) format files[^9]. Use Picard tools[^10] (version: 2.23.2) or Sambamba[^8] (version: 0.8.2) to remove PCR duplicates generated during library construction and calculate the genome coverage of each sample (01.Mapping/cov_stat.txt). Use PanDepth[^11] (version: 2.21) to calculate the coverage depth of reads after duplicate removal, with a window size of 100 kb.
+Use BWA[^5] (version: 0.7.17-r1188), BWA-MEM2[^6] (version: 2.2.1) or Bowtie2[^7] (version: 2.4.1) software to align clean reads to the reference genome, obtaining SAM (Sequence Alignment/Map) format[^8] files, and calculate alignment statistics (01.Mapping/align_stat.csv). Subsequently, use SAMtools[^9] (version: 1.9) or Sambamba[^10] (version: 0.8.2) to sort the alignment results (SAM files) according the coordinates of reads, and convert them into BAM (Binary Alignment/Map) format files[^8]. Use Picard tools[^11] (version: 2.23.2) or Sambamba[^10] (version: 0.8.2) to remove PCR duplicates generated during library construction and calculate the genome coverage of each sample (01.Mapping/cov_stat.txt). Use PanDepth[^12] (version: 2.21) to calculate the coverage depth of reads after duplicate removal, with a window size of 100 kb.
 ## Calling variant
-Calling variant is performed using the Genome Analysis Toolkit (GATK)[^12] (version: 3.8-0-ge9d806836). First, the HaplotypeCaller function of GATK is used to analyze each sample individually, then the CombineGVCFs function is used to merge the results. Subsequently, the GenotypeGVCFs function is employed to obtain SNP and INDEL information. Finally, the VariantFiltration function is used to filter the original variant sites to obtain reliable variant information.
+Calling variant is performed using the Genome Analysis Toolkit (GATK)[^13] (version: 3.8-0-ge9d806836). First, the HaplotypeCaller function of GATK is used to analyze each sample individually, then the CombineGVCFs function is used to merge the results. Subsequently, the GenotypeGVCFs function is employed to obtain SNP and INDEL information. Finally, the VariantFiltration function is used to filter the original variant sites to obtain reliable variant information.
 ## QTL-seq analysis
-The R package easyQTLseq[^13] (version: 0.1.0) is used for QTL-seq analysis, with the following specific process:
+The R package easyQTLseq[^14] (version: 0.1.0) is used for QTL-seq analysis, with the following specific process:
 
-When parental genotype is available (resequencing data or reference genome), we select Single Nucleotide Polymorphism (SNP) sites that are homozygous in both parents and different between parents (i.e., aa × bb) for QTL-seq analysis. First, we calculate the proportion of reads in the two pools that match the mutant parent type to the total coverage depth, which is the SNP index. Simultaneously, we delete SNPs where the SNP index in both pools is less than 0.3 or greater than 0.7. Then, we subtract the SNP index of the wild-type phenotype pool from that of the mutant phenotype pool to obtain the delta SNP index. Confidence intervals are obtained by simulating 10,000 times under the null hypothesis of no QTL, based on the given number of individuals in the pool and coverage depth. At the same time, we calculate the Euclidean Distance (ED) and its fourth power (ED<sup>4</sup>).
+When parental genotype is available (resequencing data or reference genome), we select Single Nucleotide Polymorphism (SNP) sites that are homozygous in both parents and different between parents (i.e., aa × bb) for QTL-seq analysis. First, we calculate the proportion of reads in the two pools that match the mutant parent type to the total coverage depth, which is the SNP index. Simultaneously, we delete SNPs where the SNP index in both pools is less than 0.3 or greater than 0.7. Then, we subtract the SNP index of the wild-type phenotype pool from that of the mutant phenotype pool to obtain the delta SNP index. Confidence intervals are obtained by simulating 10,000 times under the null hypothesis of no QTL, based on the given number of individuals in the pool and coverage depth. The genome region with delta index exceeded confidence interval is considered as QTL. At the same time, we calculate the Euclidean Distance (ED) and its fourth power (ED<sup>4</sup>). the genome region where the ED<sup>4</sup> exceeds the mean plus three times the variance of the ED<sup>4</sup> are considered QTL.
 
 When parental genotype information is not available, we screen for polymorphic SNP sites. We calculate the proportion of different base coverage depths to the total depth at that site, remove SNPs where the proportion of different bases is simultaneously less than 0.3 or greater than 0.7, and calculate the Euclidean Distance (ED) and its fourth power (ED<sup>4</sup>).
-
-$$
+```math
+\Delta \text{SNP-index}(x) = \text{SNP-index}_{\text{High}}(x) - \text{SNP-index}_{\text{Low}}(x)
+```
+```math
+\text{QTL region} = \left\{ x \;\middle|\; \left| \Delta \text{SNP-index}(x) \right| > \mathrm{CI}_{\alpha}(x) \right\}
+```
+```math
 ED=\sqrt{(A_{mut}-A_{wt})^2+(C_{mut}-C_{wt})^2+(G_{mut}-G_{wt})^2+(T_{mut}-T_{wt})^2}
-$$
-
+```
+```math
+\text{QTL region} = \left\{ x \mid \mathrm{ED}^4(x) > \overline{\mathrm{ED}^4} + 3 \cdot \mathrm{Var}(\mathrm{ED}^4) \right\}
+```
 We perform smoothing on the ΔSNP-index and Euclidean Distance (ED) values using a sliding window approach. This technique calculates statistical metrics over overlapping genomic intervals, effectively reducing noise and highlighting broad patterns across chromosomes. The smoothed data is then visualized in a plot where the x-axis represents the physical position along each chromosome, providing a genome-wide view of potential QTL regions.
 ## Variants annotation
-To facilitate subsequent candidate gene mining, we use ANNOVAR[^14] to annotate the SNP sites from the QTL-seq analysis, as well as Insertion/Deletion (InDel) sites screened under the same criteria. This annotation identifies the location of variant sites (intergenic, upstream, downstream, 5'UTR, 3'UTR, intronic, splicing, or exonic) and their impact on protein-coding genes (synonymous, nonsynonymous, stopgain, stoploss, frameshift, or nonframeshift).
+To facilitate subsequent candidate gene mining, we use ANNOVAR[^15] to annotate the SNP sites from the QTL-seq analysis, as well as Insertion/Deletion (InDel) sites screened under the same criteria. This annotation identifies the location of variant sites (intergenic, upstream, downstream, 5'UTR, 3'UTR, intronic, splicing, or exonic) and their impact on protein-coding genes (synonymous, nonsynonymous, stopgain, stoploss, frameshift, or nonframeshift).
 ## Primer design
-To conduct subsequent fine mapping, we use primer3[^15][^16] software to batch design primers based on the InDel sites screened above, and then use e-PCR (version: 2.3.12) to perform specificity testing.
+To conduct subsequent fine mapping, we use primer3[^16][^17] software to batch design primers based on the InDel sites screened above, and then use e-PCR (version: 2.3.12) to perform specificity testing.
 
 E-PCR is time-consuming when primer targets multiple genomic regions, so `epcr.pl` will returns a timeout when the e-PCR time exceeds 2 seconds. `epcr_parallel.pl` is a parallel computing version of `epcr.pl`, which can further save time.
 
@@ -126,12 +133,14 @@ This paper is also recommended to cite:
 [^5]: Li, H. (2013). Aligning sequence reads, clone sequences and assembly contigs with BWA-MEM. arXiv preprint arXiv:1303.3997
 [^6]: Vasimuddin, M., Misra, S., Li, H., & Aluru, S. (2019, May). Efficient architecture-aware acceleration of BWA-MEM for multicore systems. In 2019 IEEE international parallel and distributed processing symposium (IPDPS) (pp. 314-324). IEEE
 [^7]: Langmead, B., & Salzberg, S. L. (2012). Fast gapped-read alignment with Bowtie 2. Nature methods, 9(4), 357–359. https://doi.org/10.1038/nmeth.1923
-[^6]: Tarasov, A., Vilella, A. J., Cuppen, E., Nijman, I. J., & Prins, P. (2015). Sambamba: fast processing of NGS alignment formats. Bioinformatics (Oxford, England), 31(12), 2032–2034. https://doi.org/10.1093/bioinformatics/btv098
-[^7]: Li, H., Handsaker, B., Wysoker, A., Fennell, T., Ruan, J., Homer, N., Marth, G., Abecasis, G., Durbin, R., & 1000 Genome Project Data Processing Subgroup (2009). The Sequence Alignment/Map format and SAMtools. Bioinformatics (Oxford, England), 25(16), 2078–2079. https://doi.org/10.1093/bioinformatics/btp352
-[^8]: “Picard Toolkit.” 2019. Broad Institute, GitHub Repository. http://broadinstitute.github.io/picard/; Broad Institute
-[^9]: Yu, H., Shi, C., He, W., Li, F., & Ouyang, B. (2024). PanDepth, an ultrafast and efficient genomic tool for coverage calculation. Briefings in bioinformatics, 25(3), bbae197. https://doi.org/10.1093/bib/bbae197
-[^10]: McKenna, A., Hanna, M., Banks, E., Sivachenko, A., Cibulskis, K., Kernytsky, A., Garimella, K., Altshuler, D., Gabriel, S., Daly, M., & DePristo, M. A. (2010). The Genome Analysis Toolkit: a MapReduce framework for analyzing next-generation DNA sequencing data. Genome research, 20(9), 1297–1303. https://doi.org/10.1101/gr.107524.110
-[^11]: Wang, P. (2023). easyQTLseq: A R Package for QTLseq Analysis. https://github.com/laowang1992/easyQTLseq.git
-[^12]: Wang, K., Li, M., & Hakonarson, H. (2010). ANNOVAR: functional annotation of genetic variants from high-throughput sequencing data. Nucleic acids research, 38(16), e164. https://doi.org/10.1093/nar/gkq603
-[^13]: Untergasser, A., Cutcutache, I., Koressaar, T., Ye, J., Faircloth, B. C., Remm, M., & Rozen, S. G. (2012). Primer3--new capabilities and interfaces. Nucleic acids research, 40(15), e115. https://doi.org/10.1093/nar/gks596
-[^14]: Koressaar, T., & Remm, M. (2007). Enhancements and modifications of primer design program Primer3. Bioinformatics (Oxford, England), 23(10), 1289–1291. https://doi.org/10.1093/bioinformatics/btm091
+[^8]: Li, H., Handsaker, B., Wysoker, A., Fennell, T., Ruan, J., Homer, N., Marth, G., Abecasis, G., Durbin, R., & 1000 Genome Project Data Processing Subgroup (2009). The Sequence Alignment/Map format and SAMtools. Bioinformatics (Oxford, England), 25(16), 2078–2079. https://doi.org/10.1093/bioinformatics/btp352
+[^9]: Danecek, P., Bonfield, J. K., Liddle, J., Marshall, J., Ohan, V., Pollard, M. O., Whitwham, A., Keane, T., McCarthy, S. A., Davies, R. M., & Li, H. (2021). Twelve years of SAMtools and BCFtools. GigaScience, 10(2), giab008. https://doi.org/10.1093/gigascience/giab008
+[^10]: Tarasov, A., Vilella, A. J., Cuppen, E., Nijman, I. J., & Prins, P. (2015). Sambamba: fast processing of NGS alignment formats. Bioinformatics (Oxford, England), 31(12), 2032–2034. https://doi.org/10.1093/bioinformatics/btv098
+[^11]: “Picard Toolkit.” 2019. Broad Institute, GitHub Repository. http://broadinstitute.github.io/picard/; Broad Institute
+[^12]: Yu, H., Shi, C., He, W., Li, F., & Ouyang, B. (2024). PanDepth, an ultrafast and efficient genomic tool for coverage calculation. Briefings in bioinformatics, 25(3), bbae197. https://doi.org/10.1093/bib/bbae197
+[^13]: McKenna, A., Hanna, M., Banks, E., Sivachenko, A., Cibulskis, K., Kernytsky, A., Garimella, K., Altshuler, D., Gabriel, S., Daly, M., & DePristo, M. A. (2010). The Genome Analysis Toolkit: a MapReduce framework for analyzing next-generation DNA sequencing data. Genome research, 20(9), 1297–1303. https://doi.org/10.1101/gr.107524.110
+[^14]: Wang, P. (2023). easyQTLseq: A R Package for QTLseq Analysis. https://github.com/laowang1992/easyQTLseq.git
+[^15]: Wang, K., Li, M., & Hakonarson, H. (2010). ANNOVAR: functional annotation of genetic variants from high-throughput sequencing data. Nucleic acids research, 38(16), e164. https://doi.org/10.1093/nar/gkq603
+[^16]: Koressaar, T., & Remm, M. (2007). Enhancements and modifications of primer design program Primer3. Bioinformatics (Oxford, England), 23(10), 1289–1291. https://doi.org/10.1093/bioinformatics/btm091
+[^17]: Untergasser, A., Cutcutache, I., Koressaar, T., Ye, J., Faircloth, B. C., Remm, M., & Rozen, S. G. (2012). Primer3--new capabilities and interfaces. Nucleic acids research, 40(15), e115. https://doi.org/10.1093/nar/gks596
+
