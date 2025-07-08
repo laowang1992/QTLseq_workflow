@@ -81,8 +81,8 @@ circos.par("start.degree" = 90, track.height = track.height, track.margin = c(0,
 cat(date(), ", initialization ...\n", sep = "")
 circos.genomicInitialize(chromInfo %>% select(-CHROM), plotType = c("axis", "labels"))
 
-havePrimer <- chr %>% left_join(primerDensity, by = "CHROM") %>% select(Name, win_start, win_end, havePrimer_sum)
-isUnique <- chr %>% left_join(primerDensity, by = "CHROM") %>% select(Name, win_start, win_end, isUnique_sum)
+havePrimer <- chr %>% left_join(primerDensity, by = "CHROM") %>% select(Name, win_start, win_end, havePrimer_sum) %>% na.omit()
+isUnique <- chr %>% left_join(primerDensity, by = "CHROM") %>% select(Name, win_start, win_end, isUnique_sum) %>% na.omit()
 
 circos.genomicTrack(havePrimer, ylim = c(0, max(havePrimer$havePrimer_sum)), bg.border = NA,
                     panel.fun = function(region, value, ...) {
