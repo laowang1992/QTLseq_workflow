@@ -14,7 +14,7 @@ my $usage = <<__EOUSAGE__;
 #
 # Required:
 #
-#	--input <string>       input p3in filename.
+#	--input <string>       input p3out filename.
 #
 #	--output <string>      output table filename.
 #
