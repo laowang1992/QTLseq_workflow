@@ -124,7 +124,7 @@ wd <- getwd()
 # 
 if (is.na(argv$parameter)) {
   cat("Get parameters from CMD line.\n")
-  parameter <- data.frame(filename = argv$input, outPrefix = argv$out, CI = argv$CI, minGQ = argv$minGQ, 
+  parameter <- data.frame(outPrefix = argv$out, CI = argv$CI, minGQ = argv$minGQ, 
                           highParent = argv$highP, lowParent = argv$lowP, highBulk = argv$highB, lowBulk = argv$lowB, 
                           populationType = argv$popType, highBulkSize = argv$bulkSizeH, lowBulkSize = argv$bulkSizeL, 
                           minHPdp = argv$minHPdp, minLPdp = argv$minLPdp, minHBdp = argv$minHBdp, minLBdp = argv$minLBdp, 
