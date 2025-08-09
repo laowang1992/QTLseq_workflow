@@ -19,21 +19,63 @@ Calling variant is performed using the Genome Analysis Toolkit (GATK)[^13] (vers
 ## QTL-seq analysis
 The R package easyQTLseq[^14] (version: 0.1.0) is used for QTL-seq analysis, with the following specific process:
 
-When parental genotype is available (resequencing data or reference genome), we select Single Nucleotide Polymorphism (SNP) sites that are homozygous in both parents and different between parents (i.e., aa × bb) for QTL-seq analysis. First, we calculate the proportion of reads in the two pools that match the mutant parent type to the total coverage depth, which is the SNP index. Simultaneously, we delete SNPs where the SNP index in both pools is less than 0.3 or greater than 0.7. Then, we subtract the SNP index of the wild-type phenotype pool from that of the mutant phenotype pool to obtain the delta SNP index. Confidence intervals are obtained by simulating 10,000 times under the null hypothesis of no QTL, based on the given number of individuals in the pool and coverage depth. The genome region with delta index exceeded confidence interval is considered as QTL. At the same time, we calculate the Euclidean Distance (ED) and its fourth power (ED<sup>4</sup>). the genome region where the ED<sup>4</sup> exceeds the mean plus three times the variance of the ED<sup>4</sup> are considered QTL.
+When parental genotype is available (resequencing data or reference genome), we select Single Nucleotide Polymorphism (SNP) sites that are homozygous in both parents and different between parents (i.e., aa × bb) for QTL-seq analysis. First, we calculate the proportion of reads in the two pools that match the mutant parent type to the total coverage depth, which is the SNP index. Simultaneously, we delete SNPs where the SNP index in both pools is less than 0.3 or greater than 0.7. Then, we subtract the SNP index of the wild-type phenotype pool from that of the mutant phenotype pool to obtain the delta SNP index. Confidence intervals are obtained by simulating 10,000 times under the null hypothesis of no QTL, based on the given number of individuals in the pool and coverage depth. The genome region with delta index exceeded confidence interval is considered as QTL. Then, we calculate the Euclidean Distance (ED) and its fourth power (ED<sup>4</sup>). the genome region where the ED<sup>4</sup> exceeds the mean plus three times the variance of the ED<sup>4</sup> are considered QTL. At the same time, we calculate the G value. The significance threshold under the null hypothesis (no QTL) is determined at estimated G' corresponding to a *p*-value of 0.01, chromosome regions exceeding this threshold are considered as significant QTL regions.
 
-When parental genotype information is not available, we screen for polymorphic SNP sites. We calculate the proportion of different base coverage depths to the total depth at that site, remove SNPs where the proportion of different bases is simultaneously less than 0.3 or greater than 0.7, and calculate the Euclidean Distance (ED) and its fourth power (ED<sup>4</sup>).
-```math
-\Delta \text{SNP-index}(x) = \text{SNP-index}_{\text{High}}(x) - \text{SNP-index}_{\text{Low}}(x)
-```
-```math
+When parental genotype information is not available, we screen for polymorphic SNP sites. We calculate the proportion of different base coverage depths to the total depth at that site, remove SNPs where the proportion of different bases is simultaneously less than 0.3 or greater than 0.7, and calculate the Euclidean Distance (ED), its fourth power (ED<sup>4</sup>) and G value.
+
+- for SNP index:
+
+  ``` math
+  \Delta \mathrm{SNP\ Index} = \mathrm{SNP\ Index}_{\text{Pool1}} - \mathrm{SNP\ Index}_{\text{Pool2}}
+  ```
+
+  ``` math
+  \mathrm{SNP\ Index} = \frac{\text{Alt Depth}}{\text{Total Depth}}
+  ```
+
+- for Euclidean distance:
+
+  ``` math
+  ED=\sqrt{(A_{mut}-A_{wt})^2+(C_{mut}-C_{wt})^2+(G_{mut}-G_{wt})^2+(T_{mut}-T_{wt})^2}
+  ```
+
+- for G value:
+
+  |            | Ref allele | Alt allele | Total             |
+  |------------|------------|------------|-------------------|
+  | **Pool A** | A₁         | A₂         | A₁ + A₂           |
+  | **Pool B** | B₁         | B₂         | B₁ + B₂           |
+  | **Total**  | A₁ + B₁    | A₂ + B₂    | A₁ + A₂ + B₁ + B₂ |
+
+  ``` math
+  G = 2 \left[
+  A_1 \ln \left( \frac{A_1}{E_{A_1}} \right) +
+  A_2 \ln \left( \frac{A_2}{E_{A_2}} \right) +
+  B_1 \ln \left( \frac{B_1}{E_{B_1}} \right) +
+  B_2 \ln \left( \frac{B_2}{E_{B_2}} \right)
+  \right]
+  ```
+
+  ``` math
+  \begin{aligned}
+  E_{A_1} &= \frac{(A_1 + B_1) \times (A_1 + A_2)}{A_1 + A_2 + B_1 + B_2} \\
+  E_{A_2} &= \frac{(A_2 + B_2) \times (A_1 + A_2)}{A_1 + A_2 + B_1 + B_2} \\
+  E_{B_1} &= \frac{(A_1 + B_1) \times (B_1 + B_2)}{A_1 + A_2 + B_1 + B_2} \\
+  E_{B_2} &= \frac{(A_2 + B_2) \times (B_1 + B_2)}{A_1 + A_2 + B_1 + B_2} \\
+  \end{aligned}
+  ```
+
+Then the QTL region is determined as:
+``` math
 \text{QTL region} = \left\{ x \;\middle|\; \left| \Delta \text{SNP-index}(x) \right| > \mathrm{CI}_{\alpha}(x) \right\}
 ```
-```math
-ED=\sqrt{(A_{mut}-A_{wt})^2+(C_{mut}-C_{wt})^2+(G_{mut}-G_{wt})^2+(T_{mut}-T_{wt})^2}
+``` math
+\text{QTL region} = \left\{ x \,\big|\, \mathrm{ED}^4(x) > \overline{\mathrm{ED}^4} + 3 \cdot \mathrm{Var}(\mathrm{ED}^4) \right\}
 ```
-```math
-\text{QTL region} = \left\{ x \mid \mathrm{ED}^4(x) > \overline{\mathrm{ED}^4} + 3 \cdot \mathrm{Var}(\mathrm{ED}^4) \right\}
+``` math
+\text{QTL region} = \left\{ x \,\big|\, G'(x) > G'_{0.01} \right\}
 ```
+
 We perform smoothing on the ΔSNP-index and Euclidean Distance (ED) values using a sliding window approach. This technique calculates statistical metrics over overlapping genomic intervals, effectively reducing noise and highlighting broad patterns across chromosomes. The smoothed data is then visualized in a plot where the x-axis represents the physical position along each chromosome, providing a genome-wide view of potential QTL regions.
 ## Variants annotation
 To facilitate subsequent candidate gene mining, we use ANNOVAR[^15] to annotate the SNP sites from the QTL-seq analysis, as well as Insertion/Deletion (InDel) sites screened under the same criteria. This annotation identifies the location of variant sites (intergenic, upstream, downstream, 5'UTR, 3'UTR, intronic, splicing, or exonic) and their impact on protein-coding genes (synonymous, nonsynonymous, stopgain, stoploss, frameshift, or nonframeshift).
@@ -117,12 +159,15 @@ in the method section, like:
 > The QTL-seq analysis was performed using R package easyQTLseq
 > (<https://github.com/laowang1992/easyQTLseq.git>).
 
-This paper is also recommended to cite:
+These paper are also recommended to cite:
 
-> [Takagi H, Abe A, Yoshida K, et al. QTL-seq: rapid mapping of
-> quantitative trait loci in rice by whole genome resequencing of DNA
-> from two bulked populations. Plant J. 2013;74(1):174-183.
-> doi:10.1111/tpj.12105](https://onlinelibrary.wiley.com/doi/10.1111/tpj.12105)
+- If ΔSNP index is used: 
+  > [Takagi H, Abe A, Yoshida K, et al. QTL-seq: rapid mapping of quantitative trait loci in rice by whole genome resequencing of DNA from two bulked populations. Plant J.
+  2013;74(1):174-183. doi:10.1111/tpj.12105](https://onlinelibrary.wiley.com/doi/10.1111/tpj.12105)
+- If ED algorithm is used: 
+  > [Hill JT, Demarest BL, Bisgrove BW, Gorsi B, Su YC, Yost HJ. MMAPPR: mutation mapping analysis pipeline for pooled RNA-seq. Genome Res. 2013;23(4):687-697. doi:10.1101/gr.146936.112](https://doi.org/10.1101/gr.146936.112)
+- If G’ value is used: 
+  > [Magwene PM, Willis JH, Kelly JK. The statistics of bulk segregant analysis using next generation sequencing. PLoS Comput Biol. 2011;7(11):e1002255. doi:10.1371/journal.pcbi.1002255](https://doi.org/10.1371/journal.pcbi.1002255)
 
 
  # Reference
