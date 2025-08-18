@@ -2,6 +2,20 @@
 cd ${work_dir}/refseq
 # annovar建库
 gffread ${gff} -T -o ${gtf}
+# 如果gff文件没有gene id信息，需要执行下面的命令，修改gtf文件
+if false; then
+awk -F'\t' 'BEGIN{OFS="\t"} {
+    if($0 ~ /transcript_id/){
+        match($9, /transcript_id "([^"]+)"/, arr);
+        if(arr[1]!=""){
+            gid=arr[1]"G";
+            $9="gene_id \""gid"\"; gene_name \""gid"\"; " $9;
+        }
+    }
+    print
+}' ${gtf} > tmp.gtf && mv tmp.gtf ${gtf}
+fi
+
 gtfToGenePred  -genePredExt ${gtf} genome_refGene.txt
 retrieve_seq_from_fasta.pl --format refGene --seqfile ${genome} genome_refGene.txt --out genome_refGeneMrna.fa
 
