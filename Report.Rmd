@@ -140,6 +140,7 @@ $$
 \text{QTL region} = \left\{ x \mid \mathrm{ED}^4(x) > \overline{\mathrm{ED}^4} + 3 \cdot \mathrm{Var}(\mathrm{ED}^4) \right\}
 $$
 G' value计算方法：
+
 |            | Ref allele | Alt allele | Total             |
 |------------|------------|------------|-------------------|
 | **Pool A** | A₁         | A₂         | A₁ + A₂           |
@@ -235,7 +236,7 @@ for (i in seq_along(qtlParm$outPrefix)) {
   cat("按照欧几里得距离算法，总共鉴定到 ", nrow(ed4), " 个QTL,", sep = "")
   cat("欧几里得距离结果如下图：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".ED4.line.png'>\n\n", sep = "")
   cat("#### G' value {-}\n")
-  Gprime <- read_csv(file = paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], "GprimeQTL.csv", sep = ""), show_col_types = FALSE)
+  Gprime <- read_csv(file = paste("./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".GprimeQTL.csv", sep = ""), show_col_types = FALSE)
     cat("按照G' value，总共鉴定到 ", nrow(Gprime), " 个QTL,", sep = "")
   cat("G' value结果如下图：\n\n<img src='./result/03.Analysis/", qtlParm$outPrefix[i], "/", qtlParm$outPrefix[i], ".Gprime.line.png'>\n\n", sep = "")
 }
