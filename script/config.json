@@ -1,0 +1,40 @@
+{
+	"global": {
+		"work_dir": "/home/wangpf/workspace",
+		"thread": 28,
+		"sampleInfo": "${work_dir}/00.data/samples.txt",
+		"genome": "${work_dir}/refseq/zs11.genome.fa",
+		"gff": "${work_dir}/refseq/zs11.v0.gff3",
+		"gtf": "${work_dir}/refseq/zs11.v0.gtf"
+	},
+	"tools": {
+		"picard": "/home/wangpf/tools/picard-tools-2.23.3/picard.jar",
+		"gatk": "/home/wangpf/tools/GenomeAnalysisTK-3.8-0-ge9d806836/GenomeAnalysisTK.jar",
+		"DISCVRSeq": "/home/wangpf/tools/DISCVRSeq/DISCVRSeq-1.3.13.jar"
+	},
+	"call_vari": {
+		"index": "${work_dir}/refseq/zs11",
+		"aligner": "mem2",
+		"sjdbOverhang": 149,
+		"sort": "sbb",
+		"rmdup": "sbb",
+		"filename": "BSA"
+	},
+	"primer_design": {
+		"primerConfig": "/home/wangpf/tools/primer3-2.6.1/src/primer3_config/",
+		"minProdLen": 80,
+		"maxProdLen": 180,
+		"primerMinSize": 18,
+		"primerOptSize": 20,
+		"primerMaxSize": 27,
+		"primerMinGC": 35.0,
+		"primerMaxGC": 65.0,
+		"primerMinTM": 55.0,
+		"primerOptTM": 60.0,
+		"primerMaxTM": 65.0,
+		"primerNumReturn": 3
+	},
+	"statistics": {
+		"win_size": 100000
+	}
+}

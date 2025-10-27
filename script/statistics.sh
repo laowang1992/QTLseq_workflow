@@ -1,4 +1,4 @@
-
+#!/bin/bash
 cd ${work_dir}/refseq
 
 # Statistics
@@ -15,14 +15,14 @@ cd ${work_dir}/01.Mapping
 # coverage rate and depth
 for sample in $(cut -f1 ${sampleInfo})
 do
-	pandepth -i $sample.dd.bam -w 100000 -t $thread -o $sample
+	pandepth -i $sample.dd.bam -w ${DPwinSize} -t $thread -o $sample
 done
 Rscript CoverageStatistic.R --sampleInfo ../00.data/samples.txt --chrInfo ../refseq/chrom.txt --chrLen ../refseq/ref.len
 # align rate
-if [ $aligner = bowtie2 ];then
+if [ "$aligner" = "bowtie2" ];then
 	echo -e "Sample,Total reads,Mapped reads,Mapped rate,Uniquely mapped reads,Uniquely mapped rate" > align_stat.csv
-	for i in $(cut -f1 ${sampleInfo}); do perl alignStat.pl $i; done >> align_stat.csv
-else
+	for i in $(cut -f1 ${sampleInfo}); do perl Bowtie2_alignStat.pl $i; done >> align_stat.csv
+elif [ "$aligner" = "mem" ] || [ "$aligner" = "mem2" ]; then
 	echo "Sample,Unmapped reads,Uniquely mapped reads" > align_stat.csv
 	for i in $(cut -f1 ${sampleInfo})
 	do
@@ -30,6 +30,8 @@ else
 		unique_reads=$(samtools view -q 60 -c $i.sort.bam)
 		echo "$i,$unmapped_reads,$unique_reads" >> align_stat.csv
 	done
+elif [ "$aligner" = "star" ]; then
+	perl STAR_alignStat.pl ${sampleInfo} ./ align_stat.csv
 fi
 
 cd ${work_dir}/02.SNP_indel

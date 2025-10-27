@@ -1,3 +1,4 @@
+#!/bin/bash
 #  run_BSA.sh
 #  
 #  Copyright 2021 WangPF <wangpf0608@126.com>
@@ -26,12 +27,24 @@
 # History:
 # 	2021-02-20	First release  
 # 	2023-03-31	Second release
-## 加载配置文件
-. ./.conf
+set -euo pipefail
 
-## call variation
+# 1. 加载软件环境
+source env.sh
+
+# 2. 解析配置文件（只解析一次）
+source parse_config.sh config.json
+
 cd ${work_dir}/script
-sh call_vari.sh
+# 这里为了省事，用两个脚本分开处理DNA测序和RNA测序，可以考虑后续整合成一个脚本
+if [ "$aligner" = "star" ]; then
+    sh call_vari_RNAseq.sh
+elif [ "$aligner" = "mem" ] || [ "$aligner" = "mem2" ] || [ "$aligner" = "bowtie2" ]; then
+    sh call_vari.sh
+else
+    echo "Error: unknown aligner '$aligner'"
+    exit 1
+fi
 sh QTLseq.sh
 sh annotation.sh
 sh primer.sh

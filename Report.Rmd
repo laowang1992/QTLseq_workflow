@@ -20,14 +20,17 @@ knitr::opts_chunk$set(
   fig.align = "center"
 )
 library(tidyverse)
-prefix <- "BSA"
-aligner <- "bwa-mem2"  # 
-if (aligner == "bwa") {
+cfg <- jsonlite::fromJSON("./script/config.json")
+prefix <- cfg$call_vari$filename
+aligner <- cfg$call_vari$aligner  # 
+if (aligner == "mem") {
 	alignr_ref <- "Li, H. (2013). Aligning sequence reads, clone sequences and assembly contigs with BWA-MEM. arXiv preprint arXiv:1303.3997."
-} else if (aligner == "bwa-mem2") {
+} else if (aligner == "mem2") {
 	alignr_ref <- "Vasimuddin, M., Misra, S., Li, H., & Aluru, S. (2019, May). Efficient architecture-aware acceleration of BWA-MEM for multicore systems. In 2019 IEEE international parallel and distributed processing symposium (IPDPS) (pp. 314-324). IEEE."
 } else if (aligner == "bowtie2") {
 	alignr_ref <- "Langmead, B., & Salzberg, S. L. (2012). Fast gapped-read alignment with Bowtie 2. Nature methods, 9(4), 357–359. https://doi.org/10.1038/nmeth.1923"
+} else if (aligner == "star") {
+  alignr_ref <- "Dobin, A., Davis, C. A., Schlesinger, F., Drenkow, J., Zaleski, C., Jha, S., Batut, P., Chaisson, M., & Gingeras, T. R. (2013). STAR: ultrafast universal RNA-seq aligner. Bioinformatics (Oxford, England), 29(1), 15–21. https://doi.org/10.1093/bioinformatics/bts635"
 }
 genome <- "苦瓜MC.update"
 genome_ref <- "NULL"
@@ -58,9 +61,9 @@ file.copy(from = paste("./00.data/01.clean_data/QC/", str_replace(string = sampl
 dataInfo <- read_tsv(file = "./00.data/data_stat.txt")
 write_csv(x = dataInfo, file = "./result/00.data/data_stat.csv")
 
-if (aligner == "bwotie2") {
+if (aligner == "bwotie2" || aligner == "star") {
   mapInfo <- read_csv(file = "./01.Mapping/align_stat.csv")
-} else {
+} else if (aligner == "mem" || aligner == "mem2") {
   mapInfo <- read_csv(file = "./01.Mapping/align_stat.csv")
   mapInfo <- dataInfo %>% select(Sample = sample, `Total reads` = total_reads.clean) %>% 
     left_join(mapInfo, by = "Sample") %>% 
@@ -92,7 +95,7 @@ DT::datatable(sampleInfo)
 ```
 
 # QTL-seq原理
-QTL-seq[^1]是一种将Bulked‐segregant analysis (BSA)[^2] [^3]和高通量测序相结合，快速定位QTL的方法。目标性状有差异的双亲构建的分离群体中分别选取极端表型个体进行等量混合构建两个极端表型bulked DNA pool并进行测序。随后进行变异分析筛选出双亲间SNP位点并分别计算两个bulked DNA pool中每个SNP位点上某一亲本基因型read覆盖深度占该位点总read深度的比值，即SNP index，通过两个bulked DNA pool的SNP index相减即得到ΔSNP index。在基因组所有区域中，目标基因及其连锁的区域由于根据表型受到相反的选择在两个bulked DNA pool中表现出不同的趋势，因此ΔSNP index会显著偏离0附近；另一方面，于目标形状无关的区域则两个bulked DNA pool则表现为相似的变化趋势，因此ΔSNP index会在0附近波动。
+QTL-seq[^1]是一种将Bulked‐segregant analysis (BSA)[^2] [^3]和高通量测序相结合，快速定位QTL的方法。目标性状有差异的双亲构建的分离群体中分别选取极端表型个体进行等量混合构建两个极端表型bulked DNA（或RNA） pool并进行测序。随后进行变异分析筛选出双亲间SNP位点并分别计算两个bulked pool中每个SNP位点上某一亲本基因型read覆盖深度占该位点总read深度的比值，即SNP index，通过两个bulked pool的SNP index相减即得到ΔSNP index。在基因组所有区域中，目标基因及其连锁的区域由于根据表型受到相反的选择在两个bulked pool中表现出不同的趋势，因此ΔSNP index会显著偏离0附近；另一方面，于目标形状无关的区域则两个bulked pool则表现为相似的变化趋势，因此ΔSNP index会在0附近波动。
 
 ```{r, fig.cap="QTL-seq原理", fig.align='center'}
 knitr::include_graphics("./image/QTLseq原理.png")
@@ -106,13 +109,38 @@ knitr::include_graphics("./image/QTLseq流程.png")
 ```
 
 ## 取样、提取DNA、建库和测序
-选取分离群体中极端表型个体各30-50株以及双亲取幼嫩组织，分别提取DNA并将分离群体极端表型个体按照等量原则混合构建bulked DNA pools，然后进行建库和高通量测序 (混池DNA深度一般与单株个数相同) (具体流程应参考实验设计以及公司测序报告)。
+选取分离群体中极端表型个体各30-50株以及双亲取幼嫩组织，分别提取DNA（或RNA）并将分离群体极端表型个体按照等量原则混合构建bulked pools，然后进行建库和高通量测序 (混池DNA深度一般与单株个数相同) (具体流程应参考实验设计以及公司测序报告)。
 
 ## 数据过滤
 使用fastp[^4] (version: 0.20.0) 对raw data进行过滤得到clean data。统计过滤前后total bases、total reads、Q30、Q20、GC content以及有效数据比率 (data_stat.csv/txt)，同时使用FastQC (version: 0.11.9) 对过滤前后的数据进行质量评估 (./result/00.data/00.raw_data/QC/sample_fastqc.html ./result/00.data/01.clean_data/QC/sample_fastqc.html)。
 
 ## 比对到参考基因组
-使用`r aligner`[^5] (version: `r if (aligner=="bwa") {"0.7.17-r1188"} else if (aligner=="bwa-mem2") {"2.2.1"} else if (aligner == "bowtie2") {"2.4.5"}`) 软件将clean read比对到`r genome`参考基因组[^6]，得到SAM (Sequence Alignment/Map) 格式文件并对比对结果进行统计 (./result/01.Mapping/align_stat.csv)，随后使用sambamba[^7] (version: 0.8.2) 软件对比对结果 (SAM文件) 转换为BAM (Binary Alignment/Map) 格式文件[^8]，并按照染色体和位置排序、去除建库过程中产生的PCR重复，然后统计样本基因组覆盖率 (./result/01.Mapping/cov_stat.csv)。
+```{R include=FALSE}
+alg_tool <- switch (aligner,
+  star    = "STAR[^5]（version：2.7.3a）",
+  mem     = "bwa-mem[^5]（version：0.7.17-r1188）",
+  mem2    = "bwa-mem2[^5]（version：2.2.1）",
+  bowtie2 = "Bowtie2[^5]（version：2.4.5）",
+  stop("未知 aligner")
+)
+sort_tool <- switch (cfg$call_vari$sort,
+  sbb = "sambamba[^8]（version：0.8.2）",
+  sts = "samtools[^7]（version：1.15.1）",
+  stop("未知 sort")
+)
+rmdup_tool <- switch (cfg$call_vari$rmdup,
+  sbb    = "sambamba[^8]（version：0.8.2）",
+  picard = "Picard（version：2.23.3）",
+  stop("未知 rmdup")
+)
+```
+```{r, results='asis'}
+if (aligner == "mem" || aligner == "mem2" || aligner == "bowie2") {
+  cat("使用", alg_tool, "软件将clean read比对到", genome, "参考基因组[^6]，得到SAM (Sequence Alignment/Map) 格式文件[^7]并对比对结果进行统计 (./result/01.Mapping/align_stat.csv)，随后使用", sort_tool, "软件将比对结果（SAM文件）转换为BAM（Binary Alignment/Map）格式文件[^7]以及按照染色体位置排序，并使用", rmdup_tool, "软件去除建库过程中产生的PCR重复，然后统计样本基因组覆盖率 (./result/01.Mapping/cov_stat.csv)。\n", sep = "")
+} else if (aligner == "star") {
+  cat("使用", alg_tool, "软件将clean read比对到", genome, "参考基因组[^6]，得到排序后的BAM (Binary Alignment/Map) 格式文件[^7]并对比对结果进行统计 (./result/01.Mapping/align_stat.csv)，随后使用", rmdup_tool, "软件去除建库过程中产生的PCR重复，并统计样本基因组覆盖率（./result/01.Mapping/cov_stat.csv），使用Genome Analysis Toolkit，GATK[^9]（version: 3.8-0-ge9d806836）中的SplitNCigarReads用来处理比对中的跨外显子（spliced）reads，把它们拆分成可以被GATK正确识别的形式。\n", sep = "")
+}
+```
 
 ## 变异分析
 变异分析使用Genome Analysis Toolkit，GATK[^9] (version: 3.8-0-ge9d806836) 完成，首先使用GATK的HaplotypeCaller功能对样本单独分析再使用CombineGVCFs功能合并，随后使用GenotypeGVCFs功能得到SNP和INDEL信息，最后使用VariantFiltration功能过滤原始的变异位点的到可靠的变异信息。
@@ -305,8 +333,8 @@ for (i in seq_along(qtlParm$outPrefix)) {
 [^4]: Chen, S., Zhou, Y., Chen, Y., & Gu, J. (2018). fastp: an ultra-fast all-in-one FASTQ preprocessor. Bioinformatics (Oxford, England), 34(17), i884–i890. https://doi.org/10.1093/bioinformatics/bty560
 [^5]: `r alignr_ref`
 [^6]: `r genome_ref`
-[^7]: Tarasov, A., Vilella, A. J., Cuppen, E., Nijman, I. J., & Prins, P. (2015). Sambamba: fast processing of NGS alignment formats. Bioinformatics (Oxford, England), 31(12), 2032–2034. https://doi.org/10.1093/bioinformatics/btv098
-[^8]: Li, H., Handsaker, B., Wysoker, A., Fennell, T., Ruan, J., Homer, N., Marth, G., Abecasis, G., Durbin, R., & 1000 Genome Project Data Processing Subgroup (2009). The Sequence Alignment/Map format and SAMtools. Bioinformatics (Oxford, England), 25(16), 2078–2079. https://doi.org/10.1093/bioinformatics/btp352
+[^7]: Li, H., Handsaker, B., Wysoker, A., Fennell, T., Ruan, J., Homer, N., Marth, G., Abecasis, G., Durbin, R., & 1000 Genome Project Data Processing Subgroup (2009). The Sequence Alignment/Map format and SAMtools. Bioinformatics (Oxford, England), 25(16), 2078–2079. https://doi.org/10.1093/bioinformatics/btp352
+[^8]: Tarasov, A., Vilella, A. J., Cuppen, E., Nijman, I. J., & Prins, P. (2015). Sambamba: fast processing of NGS alignment formats. Bioinformatics (Oxford, England), 31(12), 2032–2034. https://doi.org/10.1093/bioinformatics/btv098
 [^9]: McKenna, A., Hanna, M., Banks, E., Sivachenko, A., Cibulskis, K., Kernytsky, A., Garimella, K., Altshuler, D., Gabriel, S., Daly, M., & DePristo, M. A. (2010). The Genome Analysis Toolkit: a MapReduce framework for analyzing next-generation DNA sequencing data. Genome research, 20(9), 1297–1303. https://doi.org/10.1101/gr.107524.110
 [^10]: Wang, P. (2023). easyQTLseq: A R Package for QTLseq Analysis. https://github.com/laowang1992/easyQTLseq.git
 [^11]: Hill, J. T., Demarest, B. L., Bisgrove, B. W., Gorsi, B., Su, Y. C., & Yost, H. J. (2013). MMAPPR: mutation mapping analysis pipeline for pooled RNA-seq. Genome research, 23(4), 687–697. https://doi.org/10.1101/gr.146936.112
