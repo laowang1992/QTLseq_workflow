@@ -87,6 +87,7 @@ E-PCR is time-consuming when primer targets multiple genomic regions, so `epcr.p
 # Dependency
 All the dependency and version are based on my current platform. The other version maybe compatible, but were untested.
 ## Basic
+- jq 1.6
 - perl v5.26.3
   - Getopt::Long 2.54
 - Python 3.9.16
@@ -105,6 +106,7 @@ All the dependency and version are based on my current platform. The other versi
 - bwa 0.7.17-r1188
 - bwa-mem2 2.2.1
 - bowtie 2.4.5
+- STAR 2.7.3a
 - samtools 1.15.1
 - sambamba 0.8.2
 - picard 2.23.3
@@ -116,7 +118,7 @@ GATK 3.8-0-ge9d806836
 bcftools 1.15.1
 ## QTL-seq analysis
 - R version 4.2.1
-  - easyQTLseq_0.1.0
+  - easyQTLseq_1.2.0
 ## Annotation
 - ANNOVAR 20191024
 ## Primer design
@@ -142,7 +144,7 @@ Prepare `03.Analysis/Parameter.csv`, set corresponding sample name correctly and
 
 # Usage
 ## Set variables
-Some variables should be set, which is included in `./script/.conf`.
+Some variables should be set, which is included in `./script/config.json`. The path of software should be set in `./script/env.sh`.
 ## Run QTLseq pipeline
 If all the files and variables are prepared, execute `run_QTLseq.sh`.
 ```bash
