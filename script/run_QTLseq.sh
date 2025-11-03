@@ -30,10 +30,10 @@
 set -euo pipefail
 
 # 1. 加载软件环境
-source env.sh
+. ./env.sh
 
 # 2. 解析配置文件（只解析一次）
-source parse_config.sh config.json
+. ./parse_config.sh config.json
 
 cd ${work_dir}/script
 # 这里为了省事，用两个脚本分开处理DNA测序和RNA测序，可以考虑后续整合成一个脚本

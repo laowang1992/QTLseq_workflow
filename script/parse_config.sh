@@ -65,6 +65,7 @@ export DPwinSize=$(jq -r '.statistics.win_size' "$config")
 # 改成json完全就是看着标准，但是下面的`compgen -v`会返回所有环境变量感觉不太安全
 # 以后不行再改回.conf文件吧
 for var in $(compgen -v); do
+    [[ "$var" == BASH_* ]] && continue
     eval "value=\${$var}"
     if [[ "$value" == *'${'* ]]; then
         eval "export $var=$(eval echo \"$value\")"
