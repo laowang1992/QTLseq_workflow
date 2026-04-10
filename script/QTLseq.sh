@@ -14,7 +14,7 @@ java -Xmx30g -jar ${gatk} \
      -V ${filename}.filter.INDELs.vcf.gz -o ../03.Analysis/${filename}.filter.INDELs.table
 
 cd ${work_dir}/03.Analysis
-gzip ${filename}.filter.SNPs.table
-gzip ${filename}.filter.INDELs.table
+gzip -f ${filename}.filter.SNPs.table
+gzip -f ${filename}.filter.INDELs.table
 # QTL-seq·ÖÎö
 Rscript QTLseq.R -i ${filename}.filter.SNPs.table.gz -p Parameter.csv

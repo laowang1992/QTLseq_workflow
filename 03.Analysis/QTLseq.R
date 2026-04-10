@@ -133,10 +133,12 @@ if (is.na(argv$parameter)) {
   )
 } else {
   cat("Get parameters from parameter csv file.\n")
-  parameter <- read.csv(argv$parameter, header = T)
+  # 如果名称中存在“T”或“F”，则会认定是True或False，因此强制指定类型是“字符串”
+  #parameter <- read.csv(argv$parameter, header = T)
+  parameter <- read_csv(file = argv$parameter, col_names = T, col_types = "ccccccc")
 }
 
-for (i in seq_along(parameter[,1])) {
+for (i in seq_along(parameter$outPrefix)) {
   outPrefix <- parameter$outPrefix[i]
   
   CI <- parameter$CI[i]
