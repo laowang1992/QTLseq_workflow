@@ -254,6 +254,7 @@ for (i in seq_along(parameter$outPrefix)) {
       scale_x_continuous(expand = c(0, 0), breaks = x_sld$breaks, labels = x_sld$labels) + 
       scale_y_continuous(limits = c(-1, 1), expand = c(0, 0)) + 
       labs(y = "Delta SNP index", x = NULL) + 
+      coord_cartesian(xlim = c(0, sum(subLen$Len) * (1 + (nrow(subLen) - 1) * 0.005))) + 
       cowplot::theme_half_open()
     ggsave(p_delta, filename = paste0(outPrefix, ".delta_SNP_index.pdf"), width = width, height = height)
     ggsave(p_delta, filename = paste0(outPrefix, ".delta_SNP_index.png"), width = width, height = height, dpi = 500)
