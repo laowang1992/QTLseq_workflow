@@ -121,10 +121,10 @@ java -Xmx30g -jar ${gatk} \
      -o ${filename}.flt.vcf.gz -V ${filename}.gatk.vcf.gz \
      --filterName FilterQual --filterExpression "QUAL<30.0" \
      --filterName FilterQD --filterExpression "QD<2.0" \
-     --filterName FilterMQ --filterExpression "MQ<20.0" \
+     --filterName FilterMQ --filterExpression "MQ<40.0" \
      --filterName FilterFS --filterExpression "FS>60.0" \
      --filterName FilterMQRankSum --filterExpression "MQRankSum<-12.5" \
-     --filterName FilterReadPosRankSum --filterExpression "ReadPosRankSum<-3.0" \
+     --filterName FilterReadPosRankSum --filterExpression "ReadPosRankSum<-8.0" \
      &> ${filename}.VariantFiltration.log
 
 # ¸Ä³Ébcftools£¬±£Áôbi-allele

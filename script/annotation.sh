@@ -30,7 +30,7 @@ for i in `cut -f1 -d',' ${work_dir}/03.Analysis/Parameter.csv | awk '{if(NR!=1) 
 do
 	cd ${work_dir}/04.Annotation/${i}
 	cut -f1,2 ${i}.Depth_information.txt | awk '{if(NR!=1) print }' > ${i}.SNPs.pos.txt
-	bcftools view -R ${i}.SNPs.pos.txt -Oz -o ./${i}.SNPs.vcf.gz --threads ${thread} ${work_dir}/02.SNP_indel/${filename}.filter.SNPs.vcf.gz
+	bcftools view -T ${i}.SNPs.pos.txt -Oz -o ./${i}.SNPs.vcf.gz --threads ${thread} ${work_dir}/02.SNP_indel/${filename}.filter.SNPs.vcf.gz
 	convert2annovar.pl --format vcf4old ./${i}.SNPs.vcf.gz --outfile ./${i}.SNPs.annovar.input
 	annotate_variation.pl --geneanno --neargene 2000 -buildver genome --dbtype refGene --outfile ./${i}.SNPs.anno --exonsort ./${i}.SNPs.annovar.input ${work_dir}/refseq
 	rm ${i}.Depth_information.csv ${i}.Depth_information.txt ${i}.SNPs.vcf.gz ${i}.parameter.txt
@@ -41,7 +41,7 @@ for i in `cut -f1 -d',' ${work_dir}/03.Analysis/Parameter.csv | awk '{if(NR!=1) 
 do
 	cd ${work_dir}/04.Annotation/${i}
 	cut -f1,2 ${i}.Depth_information.txt | awk '{if(NR!=1) print }' > ${i}.INDELs.pos.txt
-	bcftools view -R ${i}.INDELs.pos.txt -Oz -o ./${i}.INDELs.vcf.gz --threads ${thread} ${work_dir}/02.SNP_indel/${filename}.filter.INDELs.vcf.gz
+	bcftools view -T ${i}.INDELs.pos.txt -Oz -o ./${i}.INDELs.vcf.gz --threads ${thread} ${work_dir}/02.SNP_indel/${filename}.filter.INDELs.vcf.gz
 	convert2annovar.pl --format vcf4old ./${i}.INDELs.vcf.gz --outfile ./${i}.INDELs.annovar.input
 	annotate_variation.pl --geneanno --neargene 2000 -buildver genome --dbtype refGene --outfile ./${i}.INDELs.anno --exonsort ./${i}.INDELs.annovar.input ${work_dir}/refseq
 	rm ${i}.Depth_information.csv ${i}.Depth_information.txt ${i}.INDELs.vcf.gz ${i}.parameter.txt

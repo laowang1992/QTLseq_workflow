@@ -18,7 +18,7 @@ do
 	ln -s ../genome.famap ./
 	ln -s ../genome.hash ./
 	
-	bcftools view -R $work_dir/04.Annotation/$outPrefix/$outPrefix.INDELs.pos.txt \
+	bcftools view -T $work_dir/04.Annotation/$outPrefix/$outPrefix.INDELs.pos.txt \
 		-s $highParent,$lowParent --force-samples \
 		-Oz -o ./$outPrefix.INDELs.vcf.gz --threads \
 		${thread} ${work_dir}/02.SNP_indel/$filename.filter.INDELs.vcf.gz

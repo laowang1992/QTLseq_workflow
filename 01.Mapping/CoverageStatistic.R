@@ -56,6 +56,13 @@ for (sample in samples) {
   }
 }
 
+# coverage rate
+covRate <- df %>% group_by(Sample) %>% summarise(TotalLen=sum(Length), CoveredSite=sum(CoveredSite)) %>% 
+  mutate(CovRate = CoveredSite/TotalLen) %>% select(-TotalLen)
+write_tsv(x = covRate, file = "cov_stat.txt")
+write_csv(x = covRate, file = "cov_stat.csv")
+
+# plot
 n <- length(samples)
 
 getPalette = colorRampPalette(brewer.pal(8, "Set2"))
@@ -145,9 +152,3 @@ for (sample in samples) {
 circos.clear()
 legend(position, inset=.05, samples, pch=15, col=color, pt.cex = pt.cex, cex = cex, box.col = NA)
 dev.off()
-
-# coverage rate
-covRate <- df %>% group_by(Sample) %>% summarise(TotalLen=sum(Length), CoveredSite=sum(CoveredSite)) %>% 
-  mutate(CovRate = CoveredSite/TotalLen) %>% select(-TotalLen)
-write_tsv(x = covRate, file = "cov_stat.txt")
-write_csv(x = covRate, file = "cov_stat.csv")
